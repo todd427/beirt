@@ -1293,6 +1293,7 @@ const API_URL     = 'https://api.anthropic.com/v1/messages';
 const MODELS_URL  = 'https://api.anthropic.com/v1/models';
 const API_VERSION = '2023-06-01';
 const MCP_BETA    = 'mcp-client-2025-11-20';
+const MAX_RETRIES = 2;  // transient stream faults only; each retry re-bills input
 const THEMES      = ['paper','folio','slate','ink','terminal'];
 
 // ── State ─────────────────────────────────────────────────────
@@ -1886,6 +1887,7 @@ async function streamClaude(side, userText, attachments, hooks) {
       const err = await res.json().catch(() => ({}));
       const e = new Error(err?.error?.message || `HTTP ${res.status}`);
       if (res.status === 401 || res.status === 403) e.keyProblem = true;
+      if (res.status === 429 || res.status >= 500) e.retryable = true;
       throw e;
     }
 
@@ -1943,7 +1945,12 @@ async function streamClaude(side, userText, attachments, hooks) {
             if (evt.delta?.stop_reason) stopReason = evt.delta.stop_reason;
             if (evt.usage?.output_tokens != null) u.out = evt.usage.output_tokens;
           } else if (evt.type === 'error') {
-            throw new Error(evt.error?.message || 'stream error');
+            // Faults the API reports after the response has started — the
+            // stream is dead, but the request itself was fine to send.
+            const e = new Error(evt.error?.message || 'stream error');
+            const t = evt.error?.type;
+            e.retryable = t === 'overloaded_error' || t === 'api_error';
+            throw e;
           }
         }
       }
@@ -2004,20 +2011,38 @@ function finalizeAssistant(side, h, fullText, stopReason) {
 }
 
 // ── Run one streamed turn into a pane ─────────────────────────
+// streamClaude appends to histories[side] as it goes, so a turn that dies
+// part-way leaves the pane holding an orphaned user turn — or a pause_turn
+// assistant turn whose server_tool_use never received its result. Either is
+// malformed input that fails every later send in that pane, so rewind to the
+// mark on the way out. That rewind is also what makes a retry safe to attempt.
 async function runStream(side, userText, attachments) {
+  const mark = histories[side].length;
   let h = null;
   const ensure = () => { if (!h) { hideThinking(side); h = startAssistantMsg(side); } return h; };
-  try {
-    const { text, stopReason } = await streamClaude(side, userText, attachments, {
-      onText: acc => { ensure(); h.body.innerHTML = renderMd(acc); h.container.scrollTop = h.container.scrollHeight; },
-      onTool: label => { ensure(); addToolChip(h, label); },
-    });
-    ensure();
-    finalizeAssistant(side, h, text, stopReason);
-  } catch (err) {
-    hideThinking(side);
-    if (h) h.wrapper.remove();
-    showError(side, err.message, !!err.keyProblem);
+
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const { text, stopReason } = await streamClaude(side, userText, attachments, {
+        onText: acc => { ensure(); h.body.innerHTML = renderMd(acc); h.container.scrollTop = h.container.scrollHeight; },
+        onTool: label => { ensure(); addToolChip(h, label); },
+      });
+      ensure();
+      finalizeAssistant(side, h, text, stopReason);
+      return;
+    } catch (err) {
+      histories[side].length = mark;
+      if (err.retryable && attempt < MAX_RETRIES) {
+        // Keep the bubble so the pane does not flicker empty; say why it stalled.
+        if (h) { h.tools.innerHTML = ''; h.body.innerHTML = ''; addToolChip(h, `\u21bb ${err.message} — retrying`); }
+        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+        continue;
+      }
+      hideThinking(side);
+      if (h) h.wrapper.remove();
+      showError(side, err.message, !!err.keyProblem);
+      return;
+    }
   }
 }
 
