@@ -1294,6 +1294,12 @@ const MODELS_URL  = 'https://api.anthropic.com/v1/models';
 const API_VERSION = '2023-06-01';
 const MCP_BETA    = 'mcp-client-2025-11-20';
 const MAX_RETRIES = 2;  // transient stream faults only; each retry re-bills input
+// Models taking the dynamic-filtering server tools. Everything else keeps the
+// basic variants — the pair is per-model, not per-account.
+const DYNAMIC_WEB = new Set([
+  'claude-opus-5', 'claude-opus-4-8', 'claude-opus-4-7', 'claude-opus-4-6',
+  'claude-sonnet-5', 'claude-sonnet-4-6',
+]);
 const THEMES      = ['paper','folio','slate','ink','terminal'];
 
 // ── State ─────────────────────────────────────────────────────
@@ -1829,12 +1835,17 @@ function maxTokens() {
 }
 
 // ── Tool + server assembly (was chat.js, now client-side) ─────
-function buildTools() {
+function buildTools(model) {
   const tools = [];
   if (document.getElementById('webToggle')?.checked) {
-    tools.push({ type: 'web_search_20250305', name: 'web_search', max_uses: 5 });
+    const dyn = DYNAMIC_WEB.has(model);
     tools.push({
-      type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 5,
+      type: dyn ? 'web_search_20260209' : 'web_search_20250305',
+      name: 'web_search', max_uses: 5,
+    });
+    tools.push({
+      type: dyn ? 'web_fetch_20260209' : 'web_fetch_20250910',
+      name: 'web_fetch', max_uses: 5,
       citations: { enabled: true }, max_content_tokens: 50000,
     });
   }
@@ -1861,7 +1872,7 @@ async function streamClaude(side, userText, attachments, hooks) {
   let answer = '', stopReason = null, guard = 0, asstIdx = -1;
 
   while (true) {
-    const { tools, mcpServers } = buildTools();
+    const { tools, mcpServers } = buildTools(model);
 
     const payload = {
       model,
@@ -1885,7 +1896,8 @@ async function streamClaude(side, userText, attachments, hooks) {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      const e = new Error(err?.error?.message || `HTTP ${res.status}`);
+      const t = err?.error?.type;
+      const e = new Error((err?.error?.message || 'request failed') + ` (${t || 'HTTP ' + res.status})`);
       if (res.status === 401 || res.status === 403) e.keyProblem = true;
       if (res.status === 429 || res.status >= 500) e.retryable = true;
       throw e;
