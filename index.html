@@ -194,6 +194,14 @@ header {
   color: var(--text);
   flex-shrink: 0;
 }
+.wordmark .pron {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.52em;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  margin-left: 2px;
+}
 .wordmark em {
   font-style: italic;
   font-weight: 400;
@@ -1043,7 +1051,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
 <!-- ══ FIRST RUN — explain, then ask ═══════════════════════════ -->
 <div id="welcome">
   <div class="wel-head">
-    <div class="wordmark">Beirt <em>two minds, one problem</em></div>
+    <div class="wordmark">Beirt <span class="pron">“bert”</span> <em>two minds, one problem</em></div>
     <div class="header-spacer"></div>
     <div class="theme-btns" id="wel-themes"></div>
   </div>
@@ -1178,7 +1186,8 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
 
     <div class="tabpane" id="tab-about">
       <p style="font-size:14px;line-height:1.65">
-        <strong>Beirt</strong> — Irish for a pair of people. Two independent Claude sessions,
+        <strong>Beirt</strong> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-faint)">/bʲɛrˠtʲ/ — “bert”, the final t softened toward tch</span><br>
+        Irish for a pair of people. Two independent Claude sessions,
         side by side, with no shared context.
       </p>
       <p style="font-size:14px;line-height:1.65;margin-top:12px;color:var(--text-dim)">

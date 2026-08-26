@@ -9,7 +9,7 @@ You bring your own Anthropic API key. There is no server, no account, and nothin
 Run it at **[beirt.foxxelabs.ie](https://beirt.foxxelabs.ie)** or open `index.html` from a
 local clone. They are the same file, and neither one has anything behind it.
 
-*Beirt* is Irish for a pair of people.
+*Beirt* (/bʲɛrˠtʲ/ — "bert", with the final t softened toward *tch*) is Irish for a pair of people.
 
 ---
 
