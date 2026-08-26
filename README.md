@@ -18,7 +18,7 @@ local clone. They are the same file, and neither one has anything behind it.
 - Two independent panes — **α Alpha** and **β Beta** — each with its own model, system prompt, and conversation history
 - **Streaming** — responses render token-by-token live in each pane (both panes stream in parallel)
 - **Web access** — optional `🌐 Web` toggle gives both panes Anthropic-hosted web search + fetch; tool activity is shown inline
-- **MCP connections** — add your own MCP servers in Settings: URL, bearer token, and a per-server allow-list of permitted tools. Off by default, deny-by-default, remembered between sessions, exportable as JSON
+- **MCP connections** — add your own MCP servers from **⚙ Advanced** in the header: URL, bearer token, and a per-server allow-list of permitted tools. Off by default, deny-by-default, remembered between sessions, exportable as JSON
 - **Route selector** — send to Alpha only, Both (parallel), or Beta only
 - **Cross-send** — send any response from one pane to the other as a new user message
 - **Presets** — one-click system-prompt pairs (Sceptic ⚔ Builder, Red ⚔ Blue team, Line ⚔ Dev editor)
@@ -29,7 +29,7 @@ local clone. They are the same file, and neither one has anything behind it.
 - **Readable type** — message/code/compose text auto-scales with window width, plus an `A− / A+` nudge (persists)
 - **Five themes + Auto** — Paper and Folio (the house pair), Slate and Ink (neutral), Terminal (monochrome green, from [rialú](https://rialu.ie)). Auto follows your OS light/dark setting
 - **Persistence** — system prompts, model choices, max tokens, theme, MCP servers and toggles survive a refresh
-- Enter = newline. Send = button.
+- Enter sends. Shift+Enter is a new line.
 
 ## What it's for
 
@@ -88,7 +88,7 @@ Exported JSON deliberately omits tokens.
 
 ## Models
 
-`claude-opus-4-8` · `claude-opus-4-7` · `claude-opus-4-6` · `claude-sonnet-4-6` (default) · `claude-haiku-4-5`
+`claude-opus-5` (default) · `claude-opus-4-8` · `claude-opus-4-7` · `claude-opus-4-6` · `claude-sonnet-5` · `claude-sonnet-4-6` · `claude-haiku-4-5`
 
 Each pane selects independently. Which models your key can actually reach depends on your account; an unavailable model returns an API error into the pane rather than failing silently.
 

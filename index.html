@@ -806,25 +806,31 @@ textarea#prompt::placeholder { color: var(--text-faint); }
 
 .wel-head {
   display: flex; align-items: center; gap: 14px;
-  padding: 0 20px; height: 52px;
+  padding: 0 clamp(20px, 2vw, 40px); height: clamp(52px, 5vh, 72px);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .wel-cols { display: flex; flex: 1; gap: 1px; background: var(--border); min-height: 0; }
-.wel-col { padding: 40px; position: relative; overflow: hidden; }
+.wel-col {
+  padding: clamp(28px, 3.4vw, 64px);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center;
+}
 .wel-col.left  { flex: 1.05; background: var(--bg); }
 .wel-col.right { flex: 0.95; background: var(--surface); }
 .wel-col > .mark {
-  position: absolute; bottom: -50px;
+  position: absolute; bottom: -0.25em;
   font-family: 'Playfair Display', serif;
-  font-size: 200px; line-height: 1; font-weight: 700;
+  font-size: clamp(200px, 26vw, 460px); line-height: 1; font-weight: 700;
   pointer-events: none; user-select: none;
 }
 .wel-col.left  > .mark { left: 26px;  color: var(--left-bg); }
 .wel-col.right > .mark { right: 26px; color: var(--right-bg); }
-.wel-inner { position: relative; max-width: 48ch; }
+/* Sized against the viewport, not ch: ch resolves against the unscaled body
+   font, so a ch cap pins the column to a phone-width measure on a 4K display. */
+.wel-inner { position: relative; width: 100%; max-width: clamp(420px, 41vw, 780px); margin: 0 auto; }
 
 .kicker {
   font-family: 'IBM Plex Mono', monospace;
@@ -839,32 +845,32 @@ textarea#prompt::placeholder { color: var(--text-faint); }
   margin: 12px 0 0;
   text-wrap: balance;
 }
-.wel-col.left  .wel-h { font-size: 29px; max-width: 20ch; }
-.wel-col.right .wel-h { font-size: 27px; }
+.wel-col.left  .wel-h { font-size: clamp(29px, 3.1vw, 56px); max-width: 20ch; }
+.wel-col.right .wel-h { font-size: clamp(27px, 2.8vw, 50px); }
 
-.wel-p { font-size: 15px; line-height: 1.65; color: var(--text-dim); margin: 16px 0 0; }
+.wel-p { font-size: clamp(15px, 1.3vw, 23px); line-height: 1.65; color: var(--text-dim); margin: 16px 0 0; }
 
-.feat { display: grid; gap: 15px; margin-top: 28px; }
-.feat-row { display: grid; grid-template-columns: 92px 1fr; gap: 16px; align-items: baseline; }
+.feat { display: grid; gap: clamp(15px, 1.3vh, 24px); margin-top: clamp(24px, 2.6vh, 40px); }
+.feat-row { display: grid; grid-template-columns: clamp(92px, 8vw, 150px) 1fr; gap: clamp(16px, 1.4vw, 26px); align-items: baseline; }
 .feat-k {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px; letter-spacing: 0.11em; text-transform: uppercase;
   color: var(--text-faint); padding-top: 3px;
 }
-.feat-v { font-size: 14px; line-height: 1.55; }
+.feat-v { font-size: clamp(14px, 1.18vw, 20px); line-height: 1.55; }
 
 .tryit {
-  margin-top: 28px; padding: 16px 18px;
+  margin-top: clamp(24px, 2.6vh, 40px); padding: clamp(16px, 1.5vw, 24px) clamp(18px, 1.7vw, 26px);
   background: var(--left-bg); border: 1px solid var(--left-border); border-radius: 6px;
-  font-size: 13.5px; line-height: 1.6; color: var(--text-dim);
+  font-size: clamp(13.5px, 1.12vw, 19px); line-height: 1.6; color: var(--text-dim);
 }
 .tryit strong { color: var(--text); }
 
-.asks { display: grid; gap: 14px; margin-top: 20px; }
-.ask { display: flex; gap: 12px; font-size: 14px; line-height: 1.6; }
+.asks { display: grid; gap: clamp(14px, 1.2vh, 22px); margin-top: 20px; }
+.ask { display: flex; gap: 12px; font-size: clamp(14px, 1.18vw, 20px); line-height: 1.6; }
 .ask .dash { color: var(--right-ink); flex-shrink: 0; }
 
-.rule { height: 1px; background: var(--border); margin: 26px 0 22px; }
+.rule { height: 1px; background: var(--border); margin: clamp(22px, 2.4vh, 38px) 0 clamp(18px, 2vh, 32px); }
 
 .flabel {
   font-family: 'IBM Plex Mono', monospace;
@@ -880,9 +886,9 @@ input.keyfield, input.tfield {
   border-radius: 5px;
   color: var(--text);
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 13px;
+  font-size: clamp(13px, 1.05vw, 17px);
   letter-spacing: 0.04em;
-  padding: 10px 12px;
+  padding: clamp(10px, 0.9vw, 15px) 12px;
   outline: none;
 }
 input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
@@ -1023,9 +1029,12 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
 }
 .danger-btn:hover { border-color: var(--error); color: var(--error); }
 
+.wel-head .wordmark { font-size: clamp(20px, 1.7vw, 30px); }
+
 @media (max-width: 900px) {
   .wel-cols { flex-direction: column; }
-  .wel-col { padding: 28px 22px; }
+  .wel-col { padding: 28px 22px; justify-content: flex-start; }
+  .wel-col > .mark { font-size: 200px; }
 }
 </style>
 </head>
@@ -1220,6 +1229,9 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <button class="icon-btn" onclick="bumpFont(-1)" aria-label="Smaller text">A−</button>
       <button class="icon-btn" onclick="bumpFont(1)"  aria-label="Larger text">A+</button>
     </div>
+    <button class="icon-btn" id="advBtn" onclick="openSettings('mcp')" title="Advanced — MCP connections">
+      ⚙ Advanced<span id="hdr-mcp-count"></span>
+    </button>
     <button class="key-chip" id="keyChip" onclick="openSettings('key')" title="Key and MCP settings">
       <span class="kdot"></span><span id="keyChipLabel">no key</span>
     </button>
@@ -1234,10 +1246,12 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <span class="pane-sigil">α</span>
       <span class="pane-label">Alpha</span>
       <select class="model-sel" id="model-left">
+        <option value="claude-opus-5" selected>Opus 5</option>
         <option value="claude-opus-4-8">Opus 4.8</option>
         <option value="claude-opus-4-7">Opus 4.7</option>
         <option value="claude-opus-4-6">Opus 4.6</option>
-        <option value="claude-sonnet-4-6" selected>Sonnet 4.6</option>
+        <option value="claude-sonnet-5">Sonnet 5</option>
+        <option value="claude-sonnet-4-6">Sonnet 4.6</option>
         <option value="claude-haiku-4-5">Haiku 4.5</option>
       </select>
       <textarea class="sys-prompt" id="sys-left" placeholder="System prompt…"></textarea>
@@ -1251,10 +1265,12 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <span class="pane-sigil">β</span>
       <span class="pane-label">Beta</span>
       <select class="model-sel" id="model-right">
+        <option value="claude-opus-5" selected>Opus 5</option>
         <option value="claude-opus-4-8">Opus 4.8</option>
         <option value="claude-opus-4-7">Opus 4.7</option>
         <option value="claude-opus-4-6">Opus 4.6</option>
-        <option value="claude-sonnet-4-6" selected>Sonnet 4.6</option>
+        <option value="claude-sonnet-5">Sonnet 5</option>
+        <option value="claude-sonnet-4-6">Sonnet 4.6</option>
         <option value="claude-haiku-4-5">Haiku 4.5</option>
       </select>
       <textarea class="sys-prompt" id="sys-right" placeholder="System prompt…"></textarea>
@@ -1282,7 +1298,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
     <input type="file" id="fileInput" style="display:none" multiple
            accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.rb,.go,.rs,.java,.c,.cpp,.h,.css,.html,.xml,.yaml,.yml,.sh"
            onchange="attachFiles(this.files)">
-    <textarea id="prompt" placeholder="State the problem, sketch the architecture, start the argument…" rows="2"></textarea>
+    <textarea id="prompt" placeholder="State the problem, sketch the argument…  Enter sends · Shift+Enter for a new line" rows="2"></textarea>
     <button class="send-btn" id="sendBtn" onclick="send()">Send</button>
   </div>
 </div>
@@ -1475,11 +1491,12 @@ function saveServers() {
 }
 
 function renderMcpCount() {
-  const el = document.getElementById('wel-mcp-count');
-  if (!el) return;
   const on = servers.filter(s => s.on).length;
-  el.textContent = servers.length ? servers.length + ' server' + (servers.length === 1 ? '' : 's') +
+  const el = document.getElementById('wel-mcp-count');
+  if (el) el.textContent = servers.length ? servers.length + ' server' + (servers.length === 1 ? '' : 's') +
     ' · ' + on + ' enabled' : 'none';
+  const hdr = document.getElementById('hdr-mcp-count');
+  if (hdr) hdr.textContent = on ? ' · ' + on : '';
 }
 
 function renderServers() {
@@ -1797,9 +1814,11 @@ applyFont();
 // Priced per 1M tokens. Cache reads ≈ 0.1× input, cache writes ≈ 1.25× input.
 // These are local estimates, not a bill — your console is the source of truth.
 const PRICING = {
+  'claude-opus-5':     { in: 5, out: 25 },
   'claude-opus-4-8':   { in: 5, out: 25 },
   'claude-opus-4-7':   { in: 5, out: 25 },
   'claude-opus-4-6':   { in: 5, out: 25 },
+  'claude-sonnet-5':   { in: 2, out: 10 },
   'claude-sonnet-4-6': { in: 3, out: 15 },
   'claude-haiku-4-5':  { in: 1, out: 5 },
 };
@@ -2153,6 +2172,15 @@ const promptEl = document.getElementById('prompt');
 promptEl.addEventListener('input', () => {
   promptEl.style.height = 'auto';
   promptEl.style.height = Math.min(promptEl.scrollHeight, 180) + 'px';
+});
+
+// Enter sends, Shift+Enter breaks the line. isComposing keeps an IME's
+// confirming Enter from firing a half-typed message; keyCode 229 is the
+// same guard for browsers that leave isComposing unset.
+promptEl.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229) return;
+  e.preventDefault();
+  send();
 });
 
 // ── Drag-and-drop onto input area ─────────────────────────────
