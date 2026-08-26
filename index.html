@@ -177,9 +177,10 @@ a:hover { color: var(--left-accent); }
 header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 20px;
-  height: 52px;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 6px 20px;
+  min-height: 52px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -246,7 +247,7 @@ header {
 .auto-btn.active { color: var(--text); border-color: var(--text); }
 
 /* ── Toolbar ───────────────────────────────────────────────── */
-.toolbar { display: flex; align-items: center; gap: 10px; }
+.toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
 
 .icon-btn {
   background: none;
@@ -1039,6 +1040,13 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
 
 .wel-head .wordmark { font-size: clamp(20px, 1.7vw, 30px); }
 
+@media (max-width: 1180px) {
+  header .wordmark em { display: none; }
+}
+@media (max-width: 820px) {
+  header .wordmark .pron { display: none; }
+}
+
 @media (max-width: 900px) {
   .wel-cols { flex-direction: column; }
   .wel-col { padding: 28px 22px; justify-content: flex-start; }
@@ -1215,7 +1223,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
 
 <!-- ══ APP ═════════════════════════════════════════════════════ -->
 <header>
-  <div class="wordmark">Beirt <em>two minds, one problem</em></div>
+  <div class="wordmark">Beirt <span class="pron">“bert”</span> <em>two minds, one problem</em></div>
   <div class="header-spacer"></div>
   <div class="toolbar">
     <div class="theme-btns" id="app-themes"></div>
