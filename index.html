@@ -1858,7 +1858,7 @@ async function streamClaude(side, userText, attachments, hooks) {
 
   histories[side].push({ role: 'user', content: buildContent(userText, attachments) });
 
-  let answer = '', stopReason = null, guard = 0;
+  let answer = '', stopReason = null, guard = 0, asstIdx = -1;
 
   while (true) {
     const { tools, mcpServers } = buildTools();
@@ -1947,8 +1947,8 @@ async function streamClaude(side, userText, attachments, hooks) {
           } else if (evt.type === 'error') {
             // Faults the API reports after the response has started — the
             // stream is dead, but the request itself was fine to send.
-            const e = new Error(evt.error?.message || 'stream error');
             const t = evt.error?.type;
+            const e = new Error((evt.error?.message || 'stream error') + (t ? ` (${t})` : ''));
             e.retryable = t === 'overloaded_error' || t === 'api_error';
             throw e;
           }
@@ -1957,7 +1957,19 @@ async function streamClaude(side, userText, attachments, hooks) {
     }
 
     recordUsage(model, u);
-    histories[side].push({ role: 'assistant', content: blocks.filter(Boolean) });
+
+    // A paused turn is still ONE assistant turn. Appending a message per round
+    // splits a server_tool_use from the tool_result that arrives in the round
+    // after it, and stacks assistant turns with no user turn between them. The
+    // pane renders fine either way — answer accumulates for display — so the
+    // damage stays invisible until that history is re-sent on the next send.
+    // Drop empty text blocks too: a content_block_start that never received a
+    // delta leaves {type:'text', text:''}, which the API rejects as input.
+    const round = blocks.filter(b => b && !(b.type === 'text' && !b.text?.trim()));
+    if (round.length) {
+      if (asstIdx === -1) asstIdx = histories[side].push({ role: 'assistant', content: round }) - 1;
+      else histories[side][asstIdx].content.push(...round);
+    }
 
     if (stopReason === 'pause_turn' && guard++ < 5) continue;
     return { text: answer, stopReason };
