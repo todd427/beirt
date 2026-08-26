@@ -6,6 +6,9 @@ Beirt is a single-file browser tool for running two Claude API sessions side by 
 
 You bring your own Anthropic API key. There is no server, no account, and nothing to deploy.
 
+Run it at **[beirt.foxxelabs.ie](https://beirt.foxxelabs.ie)** or open `index.html` from a
+local clone. They are the same file, and neither one has anything behind it.
+
 *Beirt* is Irish for a pair of people.
 
 ---
@@ -56,7 +59,8 @@ open index.html          # or just double-click it
 
 Paste your key into the first-run screen, choose whether to keep it for the session or remember it on the device, and start.
 
-To serve it instead of opening the file directly, any static host will do — Cloudflare Pages, GitHub Pages, `python -m http.server`. Nothing on the server side is required, because there is no server side.
+To serve it instead of opening the file directly, any static host will do — Cloudflare Pages, GitHub Pages, `python -m http.server`. Nothing on the server side is required, because there is no server side. The hosted copy is this repo's `main` branch on GitHub Pages; the
+one-line `CNAME` file at the root is the whole of the deploy configuration.
 
 ## Where your key goes
 
