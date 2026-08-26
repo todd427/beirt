@@ -88,7 +88,9 @@ Exported JSON deliberately omits tokens.
 
 ## Models
 
-`claude-opus-5` (default) · `claude-opus-4-8` · `claude-opus-4-7` · `claude-opus-4-6` · `claude-sonnet-5` · `claude-sonnet-4-6` · `claude-haiku-4-5`
+`claude-fable-5` · `claude-opus-5` (default) · `claude-opus-4-8` · `claude-opus-4-7` · `claude-opus-4-6` · `claude-sonnet-5` · `claude-sonnet-4-6` · `claude-haiku-4-5`
+
+Fable 5 is the most capable and the most expensive — $10/$50 per million tokens against Opus 5's $5/$25. It also requires 30-day data retention, so an org configured for zero retention gets a 400 rather than a reply.
 
 Each pane selects independently. Which models your key can actually reach depends on your account; an unavailable model returns an API error into the pane rather than failing silently.
 

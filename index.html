@@ -1246,6 +1246,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <span class="pane-sigil">α</span>
       <span class="pane-label">Alpha</span>
       <select class="model-sel" id="model-left">
+        <option value="claude-fable-5">Fable 5</option>
         <option value="claude-opus-5" selected>Opus 5</option>
         <option value="claude-opus-4-8">Opus 4.8</option>
         <option value="claude-opus-4-7">Opus 4.7</option>
@@ -1265,6 +1266,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <span class="pane-sigil">β</span>
       <span class="pane-label">Beta</span>
       <select class="model-sel" id="model-right">
+        <option value="claude-fable-5">Fable 5</option>
         <option value="claude-opus-5" selected>Opus 5</option>
         <option value="claude-opus-4-8">Opus 4.8</option>
         <option value="claude-opus-4-7">Opus 4.7</option>
@@ -1313,7 +1315,7 @@ const MAX_RETRIES = 2;  // transient stream faults only; each retry re-bills inp
 // Models taking the dynamic-filtering server tools. Everything else keeps the
 // basic variants — the pair is per-model, not per-account.
 const DYNAMIC_WEB = new Set([
-  'claude-opus-5', 'claude-opus-4-8', 'claude-opus-4-7', 'claude-opus-4-6',
+  'claude-fable-5', 'claude-opus-5', 'claude-opus-4-8', 'claude-opus-4-7', 'claude-opus-4-6',
   'claude-sonnet-5', 'claude-sonnet-4-6',
 ]);
 const THEMES      = ['paper','folio','slate','ink','terminal'];
@@ -1814,6 +1816,7 @@ applyFont();
 // Priced per 1M tokens. Cache reads ≈ 0.1× input, cache writes ≈ 1.25× input.
 // These are local estimates, not a bill — your console is the source of truth.
 const PRICING = {
+  'claude-fable-5':    { in: 10, out: 50 },
   'claude-opus-5':     { in: 5, out: 25 },
   'claude-opus-4-8':   { in: 5, out: 25 },
   'claude-opus-4-7':   { in: 5, out: 25 },
@@ -1957,6 +1960,10 @@ async function streamClaude(side, userText, attachments, hooks) {
               hooks.onText(answer);
             } else if (evt.delta?.type === 'input_json_delta') {
               partial[evt.index] = (partial[evt.index] || '') + evt.delta.partial_json;
+            } else if (evt.delta?.type === 'thinking_delta') {
+              if (b) b.thinking = (b.thinking || '') + evt.delta.thinking;
+            } else if (evt.delta?.type === 'signature_delta') {
+              if (b) b.signature = (b.signature || '') + evt.delta.signature;
             }
           } else if (evt.type === 'content_block_stop') {
             const b = blocks[evt.index];
@@ -1996,6 +2003,8 @@ async function streamClaude(side, userText, attachments, hooks) {
     // damage stays invisible until that history is re-sent on the next send.
     // Drop empty text blocks too: a content_block_start that never received a
     // delta leaves {type:'text', text:''}, which the API rejects as input.
+    // Thinking blocks are exempt — models that think replay them verbatim,
+    // empty text and all, and a modified one is rejected.
     const round = blocks.filter(b => b && !(b.type === 'text' && !b.text?.trim()));
     if (round.length) {
       if (asstIdx === -1) asstIdx = histories[side].push({ role: 'assistant', content: round }) - 1;
