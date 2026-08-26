@@ -1,0 +1,9 @@
+# macOS / editors
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+
+# There is no build and no dependencies — nothing else should appear here.
+# If you find yourself adding node_modules or .env, see CLAUDE.md.

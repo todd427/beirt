@@ -1,0 +1,2179 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="paper">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beirt — Two Minds, One Problem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── Themes ────────────────────────────────────────────────────
+   Two house themes (Paper, Folio), two neutral (Slate, Ink), and
+   Terminal — the monochrome green, carried over from rialú. "Auto"
+   is not a palette: it picks Paper or Folio from the OS setting.  */
+
+[data-theme="paper"] {
+  --bg:           #f7f3ec;
+  --surface:      #fffdf8;
+  --surface2:     #ece7dd;
+  --border:       rgba(38,30,18,0.12);
+  --text:         #241d12;
+  --text-dim:     rgba(36,29,18,0.84);
+  --text-faint:   rgba(36,29,18,0.62);
+  --left-accent:  #12695f;
+  --left-ink:     #0d4f47;
+  --left-bg:      rgba(18,105,95,0.07);
+  --left-border:  rgba(18,105,95,0.28);
+  --right-accent: #7d5a12;
+  --right-ink:    #5a400c;
+  --right-bg:     rgba(125,90,18,0.07);
+  --right-border: rgba(125,90,18,0.28);
+  --error:        #8a2f2f;
+  --warn:         #6b4a1c;
+  --send-bg:      #241d12;
+  --send-fg:      #f7f3ec;
+  --tag-bg:       rgba(0,0,0,0.05);
+  --code-bg:      rgba(0,0,0,0.06);
+  --shadow:       0 4px 24px rgba(60,45,20,0.14);
+  --swatch-ring:  #c9c1b2;
+}
+
+[data-theme="folio"] {
+  --bg:           #111009;
+  --surface:      #181610;
+  --surface2:     #1f1c14;
+  --border:       rgba(255,255,255,0.07);
+  --text:         #e2d9c4;
+  --text-dim:     rgba(226,217,196,0.79);
+  --text-faint:   rgba(226,217,196,0.74);
+  --left-accent:  #4ec9b0;
+  --left-ink:     #4ec9b0;
+  --left-bg:      rgba(78,201,176,0.07);
+  --left-border:  rgba(78,201,176,0.22);
+  --right-accent: #c8a655;
+  --right-ink:    #c8a655;
+  --right-bg:     rgba(200,166,85,0.07);
+  --right-border: rgba(200,166,85,0.25);
+  --error:        #ea9090;
+  --warn:         #e0a05c;
+  --send-bg:      #e2d9c4;
+  --send-fg:      #111009;
+  --tag-bg:       rgba(255,255,255,0.05);
+  --code-bg:      rgba(0,0,0,0.35);
+  --shadow:       0 4px 24px rgba(0,0,0,0.6);
+  --swatch-ring:  transparent;
+}
+
+[data-theme="slate"] {
+  --bg:           #f6f7f9;
+  --surface:      #ffffff;
+  --surface2:     #eceef2;
+  --border:       rgba(15,23,42,0.1);
+  --text:         #0f172a;
+  --text-dim:     rgba(15,23,42,0.76);
+  --text-faint:   rgba(15,23,42,0.6);
+  --left-accent:  #1d4ed8;
+  --left-ink:     #1739a6;
+  --left-bg:      rgba(29,78,216,0.06);
+  --left-border:  rgba(29,78,216,0.22);
+  --right-accent: #b4530a;
+  --right-ink:    #8a3f07;
+  --right-bg:     rgba(180,83,10,0.06);
+  --right-border: rgba(180,83,10,0.22);
+  --error:        #9b1c1c;
+  --warn:         #854d0e;
+  --send-bg:      #0f172a;
+  --send-fg:      #ffffff;
+  --tag-bg:       rgba(15,23,42,0.04);
+  --code-bg:      rgba(15,23,42,0.05);
+  --shadow:       0 2px 12px rgba(15,23,42,0.1);
+  --swatch-ring:  #c6cad1;
+}
+
+[data-theme="ink"] {
+  --bg:           #0e1116;
+  --surface:      #161a21;
+  --surface2:     #1d222b;
+  --border:       rgba(255,255,255,0.09);
+  --text:         #e6e9ef;
+  --text-dim:     rgba(230,233,239,0.76);
+  --text-faint:   rgba(230,233,239,0.64);
+  --left-accent:  #5ecfb6;
+  --left-ink:     #7ddcc6;
+  --left-bg:      rgba(94,207,182,0.08);
+  --left-border:  rgba(94,207,182,0.24);
+  --right-accent: #b39ded;
+  --right-ink:    #c3b0f2;
+  --right-bg:     rgba(179,157,237,0.08);
+  --right-border: rgba(179,157,237,0.24);
+  --error:        #f0a0a0;
+  --warn:         #e8b06a;
+  --send-bg:      #e6e9ef;
+  --send-fg:      #0e1116;
+  --tag-bg:       rgba(255,255,255,0.06);
+  --code-bg:      rgba(0,0,0,0.4);
+  --shadow:       0 4px 24px rgba(0,0,0,0.65);
+  --swatch-ring:  transparent;
+}
+
+[data-theme="terminal"] {
+  --bg:           #090c09;
+  --surface:      #0e120e;
+  --surface2:     #131813;
+  --border:       rgba(34,200,68,0.18);
+  --text:         #22dd44;
+  --text-dim:     #1aa93b;
+  --text-faint:   #178830;
+  --left-accent:  #22dd44;
+  --left-ink:     #66ee88;
+  --left-bg:      rgba(34,200,68,0.08);
+  --left-border:  rgba(34,200,68,0.32);
+  --right-accent: #88dd22;
+  --right-ink:    #aaf044;
+  --right-bg:     rgba(136,221,34,0.08);
+  --right-border: rgba(136,221,34,0.32);
+  --error:        #dd3333;
+  --warn:         #ccdd22;
+  --send-bg:      #22dd44;
+  --send-fg:      #060906;
+  --tag-bg:       rgba(34,200,68,0.08);
+  --code-bg:      #061206;
+  --shadow:       0 4px 24px rgba(0,0,0,0.8);
+  --swatch-ring:  rgba(34,200,68,0.45);
+}
+/* Terminal changes the type as well as the colour. */
+[data-theme="terminal"] * { font-family: 'IBM Plex Mono', monospace !important; letter-spacing: 0 !important; }
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Readable-content type: auto-scales with viewport width, times a manual
+   multiplier (--fs, set by the A−/A+ control). Chrome stays compact. */
+:root {
+  --fs: 1;
+  --msg: calc(clamp(13.5px, 0.5vw + 8px, 20px) * var(--fs));
+}
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+
+a { color: var(--left-ink); text-decoration: none; border-bottom: 1px solid currentColor; }
+a:hover { color: var(--left-accent); }
+
+:focus-visible { outline: 2px solid var(--left-accent); outline-offset: 2px; }
+
+/* ── Header ────────────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.wordmark {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.wordmark em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-left: 8px;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.header-spacer { flex: 1; }
+
+/* ── Theme switcher ────────────────────────────────────────── */
+.theme-btns { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+
+.theme-btn {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--swatch-ring);
+  cursor: pointer;
+  padding: 0;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.theme-btn:hover { transform: scale(1.15); }
+.theme-btn.active { box-shadow: 0 0 0 2px var(--text); }
+.theme-btn[data-t="paper"]    { background: #f7f3ec; border-color: #c9c1b2; }
+.theme-btn[data-t="folio"]    { background: #111009; border-color: transparent; }
+.theme-btn[data-t="slate"]    { background: #f6f7f9; border-color: #c6cad1; }
+.theme-btn[data-t="ink"]      { background: #0e1116; border-color: transparent; }
+.theme-btn[data-t="terminal"] { background: #0e120e; border-color: rgba(34,200,68,0.45); }
+
+.auto-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.11em;
+  padding: 3px 7px;
+}
+.auto-btn.active { color: var(--text); border-color: var(--text); }
+
+/* ── Toolbar ───────────────────────────────────────────────── */
+.toolbar { display: flex; align-items: center; gap: 10px; }
+
+.icon-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+.icon-btn:hover { border-color: var(--text-dim); color: var(--text); }
+.icon-btn:active { background: var(--tag-bg); }
+
+select.preset-sel {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  flex-shrink: 0;
+}
+select.preset-sel:hover { border-color: var(--text-dim); color: var(--text); }
+
+.maxtok {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.maxtok input {
+  width: 64px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 3px 6px;
+  outline: none;
+}
+.maxtok input:focus { border-color: var(--left-accent); color: var(--text); }
+
+.fontctl { display: flex; gap: 4px; flex-shrink: 0; }
+.fontctl .icon-btn { padding: 4px 9px; font-weight: 600; }
+
+.web-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  user-select: none;
+  flex-shrink: 0;
+}
+.web-toggle input { accent-color: var(--left-accent); cursor: pointer; margin: 0; }
+.web-toggle:has(input:checked) { color: var(--text); border-color: var(--left-accent); }
+
+/* Key chip — the route into settings, and the only place the key surfaces. */
+.key-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  padding: 4px 10px;
+  flex-shrink: 0;
+}
+.key-chip:hover { border-color: var(--text-dim); color: var(--text); }
+.key-chip .kdot { width: 5px; height: 5px; border-radius: 50%; background: var(--left-accent); flex-shrink: 0; }
+.key-chip.session { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.key-chip.session .kdot { background: var(--warn); }
+.key-chip.missing { color: var(--error); border-color: color-mix(in srgb, var(--error) 40%, transparent); }
+.key-chip.missing .kdot { background: var(--error); }
+
+.tool-trace { display: flex; flex-direction: column; gap: 4px; }
+.tool-trace:not(:empty) { margin-bottom: 6px; }
+.tool-chip {
+  align-self: flex-start;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 8px;
+  max-width: 88%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trunc-note {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--warn);
+  margin-top: 6px;
+}
+.trunc-note.refusal { color: var(--error); }
+
+/* ── Panes ─────────────────────────────────────────────────── */
+.panes {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 1px;
+  background: var(--border);
+}
+
+.pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Pane header ───────────────────────────────────────────── */
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.pane-sigil {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.pane-left  .pane-sigil { color: var(--left-ink); }
+.pane-right .pane-sigil { color: var(--right-ink); }
+
+.pane-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+select.model-sel {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  padding: 3px 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+textarea.sys-prompt {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-dim);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 11px;
+  padding: 4px 8px;
+  resize: none;
+  outline: none;
+  min-height: 28px;
+  max-height: 28px;
+  line-height: 1.5;
+}
+textarea.sys-prompt::placeholder { color: var(--text-faint); }
+textarea.sys-prompt:focus { color: var(--text); }
+
+.btn-clear {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  padding: 3px 8px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.btn-clear:hover { border-color: var(--error); color: var(--error); }
+
+/* ── Messages ──────────────────────────────────────────────── */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+.messages::-webkit-scrollbar       { width: 3px; }
+.messages::-webkit-scrollbar-track { background: transparent; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Empty-pane watermark — bleeds off the bottom of its own column. */
+.messages:empty::after {
+  content: attr(data-sigil);
+  position: absolute;
+  bottom: -46px;
+  font-family: 'Playfair Display', serif;
+  font-size: 200px;
+  line-height: 1;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+}
+#msgs-left:empty::after  { left: 26px;  color: var(--left-bg); }
+#msgs-right:empty::after { right: 26px; color: var(--right-bg); }
+
+/* ── Message bubbles ───────────────────────────────────────── */
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: fadeUp 0.2s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.msg-role {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding-left: 2px;
+}
+
+.msg.user { align-items: flex-end; }
+
+.msg-body {
+  max-width: 92%;
+  padding: 10px 13px;
+  border-radius: 8px;
+  line-height: 1.65;
+  font-size: var(--msg);
+}
+
+.msg.user .msg-body {
+  background: var(--tag-bg);
+  border: 1px solid var(--border);
+  align-self: flex-end;
+}
+
+.pane-left  .msg.assistant .msg-body {
+  background: var(--left-bg);
+  border: 1px solid var(--left-border);
+  align-self: flex-start;
+}
+
+.pane-right .msg.assistant .msg-body {
+  background: var(--right-bg);
+  border: 1px solid var(--right-border);
+  align-self: flex-start;
+}
+
+/* ── Attachment thumbnail in message ───────────────────────── */
+.msg-attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  align-self: flex-end;
+  max-width: 88%;
+}
+
+/* ── Cross-send ────────────────────────────────────────────── */
+.cross-send {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  margin-top: 2px;
+  transition: all 0.15s;
+}
+.pane-left  .cross-send:hover { border-color: var(--right-accent); color: var(--right-ink); }
+.pane-right .cross-send:hover { border-color: var(--left-accent);  color: var(--left-ink); }
+
+/* ── Thinking ──────────────────────────────────────────────── */
+.thinking { display: flex; align-items: center; gap: 6px; padding: 8px 0; animation: fadeUp 0.2s ease; }
+.thinking-dots { display: flex; gap: 4px; }
+.thinking-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.pane-left  .thinking-dot { background: var(--left-accent); }
+.pane-right .thinking-dot { background: var(--right-accent); }
+.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40%            { opacity: 1;   transform: scale(1.1); }
+}
+
+/* ── Code blocks ───────────────────────────────────────────── */
+.msg-body pre {
+  background: var(--code-bg);
+  border-radius: 5px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 8px 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: calc(var(--msg) * 0.85);
+  line-height: 1.6;
+}
+.msg-body code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: calc(var(--msg) * 0.85);
+  background: var(--code-bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.msg-body pre code { background: none; padding: 0; }
+.msg-body p { margin-bottom: 8px; }
+.msg-body p:last-child { margin-bottom: 0; }
+.msg-body h1, .msg-body h2, .msg-body h3 {
+  font-family: 'Playfair Display', serif;
+  margin: 10px 0 6px;
+  line-height: 1.3;
+}
+.msg-body h1 { font-size: calc(var(--msg) * 1.3); }
+.msg-body h2 { font-size: calc(var(--msg) * 1.12); }
+.msg-body h3 { font-size: calc(var(--msg) * 1.0); font-style: italic; }
+.msg-body ul, .msg-body ol { padding-left: 18px; margin: 6px 0; }
+.msg-body li { margin: 3px 0; }
+.msg-body strong { font-weight: 600; }
+.msg-body em { font-style: italic; }
+.msg-body hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+
+/* ── Error ─────────────────────────────────────────────────── */
+.error-bubble {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--error);
+  background: var(--tag-bg);
+  border: 1px solid color-mix(in srgb, var(--error) 25%, transparent);
+  border-radius: 6px;
+  padding: 8px 12px;
+  animation: fadeUp 0.2s ease;
+}
+.error-bubble button {
+  background: none; border: none; padding: 0; margin-left: 4px;
+  color: inherit; font: inherit; cursor: pointer;
+  border-bottom: 1px solid currentColor;
+}
+
+/* ── Input area ────────────────────────────────────────────── */
+.input-area {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+
+.route-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.route-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.route-btns { display: flex; gap: 4px; }
+
+.route-btn {
+  background: transparent;
+  border: 2px solid var(--border);   /* 2px on all states → no layout shift when active */
+  border-radius: 5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  transition: all 0.15s;
+}
+.route-btn:hover { color: var(--text); border-color: var(--text-dim); }
+.route-btn.active-left  { background: var(--left-bg);  border-color: var(--left-accent);  color: var(--left-ink);  font-weight: 700; }
+.route-btn.active-both  { background: var(--tag-bg);   border-color: var(--text);         color: var(--text);      font-weight: 700; }
+.route-btn.active-right { background: var(--right-bg); border-color: var(--right-accent); color: var(--right-ink); font-weight: 700; }
+
+.status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-left: auto;
+}
+
+/* ── Attachment strip ──────────────────────────────────────── */
+#attach-strip {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+#attach-strip.has-files { display: flex; }
+
+.attach-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  padding: 3px 8px;
+  animation: fadeUp 0.15s ease;
+}
+.attach-pill .pill-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach-pill .pill-rm {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 0 0 2px;
+  transition: color 0.15s;
+}
+.attach-pill .pill-rm:hover { color: var(--error); }
+
+/* ── Compose row ───────────────────────────────────────────── */
+.compose-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.attach-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 12px;
+  height: 52px;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+}
+.attach-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+textarea#prompt {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--msg);
+  line-height: 1.6;
+  padding: 10px 14px;
+  resize: none;
+  outline: none;
+  min-height: 52px;
+  max-height: 180px;
+  transition: border-color 0.15s;
+}
+textarea#prompt:focus { border-color: var(--left-accent); }
+textarea#prompt::placeholder { color: var(--text-faint); }
+
+.send-btn {
+  background: var(--send-bg);
+  border: none;
+  border-radius: 8px;
+  color: var(--send-fg);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 13px 20px;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+.send-btn:hover    { opacity: 0.85; }
+.send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── App footer credit ─────────────────────────────────────── */
+.credit {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+.credit a { font-family: 'IBM Plex Mono', monospace; }
+.credit .spacer { margin-left: auto; }
+
+/* ── Welcome (first run) ───────────────────────────────────── */
+#welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+}
+#welcome.show { display: flex; }
+
+.wel-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 20px; height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.wel-cols { display: flex; flex: 1; gap: 1px; background: var(--border); min-height: 0; }
+.wel-col { padding: 40px; position: relative; overflow: hidden; }
+.wel-col.left  { flex: 1.05; background: var(--bg); }
+.wel-col.right { flex: 0.95; background: var(--surface); }
+.wel-col > .mark {
+  position: absolute; bottom: -50px;
+  font-family: 'Playfair Display', serif;
+  font-size: 200px; line-height: 1; font-weight: 700;
+  pointer-events: none; user-select: none;
+}
+.wel-col.left  > .mark { left: 26px;  color: var(--left-bg); }
+.wel-col.right > .mark { right: 26px; color: var(--right-bg); }
+.wel-inner { position: relative; max-width: 48ch; }
+
+.kicker {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.wel-col.left  .kicker { color: var(--left-ink); }
+.wel-col.right .kicker { color: var(--right-ink); }
+
+.wel-h {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700; letter-spacing: -0.015em; line-height: 1.2;
+  margin: 12px 0 0;
+  text-wrap: balance;
+}
+.wel-col.left  .wel-h { font-size: 29px; max-width: 20ch; }
+.wel-col.right .wel-h { font-size: 27px; }
+
+.wel-p { font-size: 15px; line-height: 1.65; color: var(--text-dim); margin: 16px 0 0; }
+
+.feat { display: grid; gap: 15px; margin-top: 28px; }
+.feat-row { display: grid; grid-template-columns: 92px 1fr; gap: 16px; align-items: baseline; }
+.feat-k {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.11em; text-transform: uppercase;
+  color: var(--text-faint); padding-top: 3px;
+}
+.feat-v { font-size: 14px; line-height: 1.55; }
+
+.tryit {
+  margin-top: 28px; padding: 16px 18px;
+  background: var(--left-bg); border: 1px solid var(--left-border); border-radius: 6px;
+  font-size: 13.5px; line-height: 1.6; color: var(--text-dim);
+}
+.tryit strong { color: var(--text); }
+
+.asks { display: grid; gap: 14px; margin-top: 20px; }
+.ask { display: flex; gap: 12px; font-size: 14px; line-height: 1.6; }
+.ask .dash { color: var(--right-ink); flex-shrink: 0; }
+
+.rule { height: 1px; background: var(--border); margin: 26px 0 22px; }
+
+.flabel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 7px;
+}
+
+.keyrow { display: flex; gap: 8px; }
+input.keyfield, input.tfield {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
+  outline: none;
+}
+input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
+
+.go-btn {
+  background: var(--send-bg); border: none; border-radius: 8px;
+  color: var(--send-fg);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 0.06em;
+  padding: 0 20px; cursor: pointer; white-space: nowrap;
+}
+.go-btn:hover { opacity: 0.85; }
+.go-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.keep-btns { display: flex; gap: 6px; }
+.keep-btn {
+  background: transparent;
+  border: 2px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  padding: 7px 14px;
+}
+.keep-btn.on { background: var(--tag-bg); border-color: var(--text); color: var(--text); font-weight: 700; }
+
+.note {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; line-height: 1.6;
+  color: var(--text-faint);
+  margin-top: 9px;
+}
+.ok-note  { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--left-ink); margin-top: 10px; }
+.bad-note {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--error);
+  background: var(--tag-bg); border: 1px solid color-mix(in srgb, var(--error) 25%, transparent);
+  border-radius: 6px; padding: 8px 12px; margin-top: 10px;
+}
+.checking { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.checking .thinking-dot { background: var(--left-accent); }
+
+.disclose {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 22px; padding: 10px 12px;
+  border: 1px dashed var(--border); border-radius: 6px;
+  cursor: pointer; width: 100%;
+  background: none; color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+}
+.disclose:hover { border-color: var(--text-dim); }
+.disclose .count { color: var(--text-faint); font-size: 10px; }
+.disclose .chev { margin-left: auto; color: var(--text-faint); }
+
+/* ── Settings dialog ───────────────────────────────────────── */
+.backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.62);
+  display: none; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.backdrop.show { display: flex; }
+
+.dialog {
+  width: 620px; max-width: 100%; max-height: 88dvh; overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top-color: color-mix(in srgb, var(--text) 18%, transparent);
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.5), var(--shadow);
+  padding: 24px 26px;
+}
+.dialog h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px; font-weight: 700; letter-spacing: -0.01em;
+}
+.tabs { display: flex; gap: 6px; margin: 18px 0 20px; }
+.tab {
+  background: transparent; border: 1px solid var(--border); border-radius: 5px;
+  color: var(--text-dim); cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.05em;
+  padding: 6px 13px;
+}
+.tab.on { border: 2px solid var(--text); background: var(--tag-bg); color: var(--text); font-weight: 700; padding: 5px 12px; }
+.tabpane { display: none; }
+.tabpane.on { display: block; }
+
+.srv {
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 13px 15px; background: var(--bg); margin-bottom: 10px;
+}
+.srv.off { opacity: 0.62; }
+.srv-top { display: flex; align-items: center; gap: 10px; }
+.srv-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--left-accent); flex-shrink: 0; }
+.srv.off .srv-dot { background: var(--text-faint); }
+.srv-name { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; }
+.srv-url {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.srv-tog {
+  margin-left: auto; flex-shrink: 0;
+  background: transparent; border: 2px solid var(--border); border-radius: 5px;
+  color: var(--text-dim); cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.05em;
+  padding: 3px 9px;
+}
+.srv-tog.on { border-color: var(--text); background: var(--tag-bg); color: var(--text); }
+.srv-rm {
+  background: none; border: none; cursor: pointer; flex-shrink: 0;
+  color: var(--text-faint); font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+}
+.srv-rm:hover { color: var(--error); }
+.srv-tools { display: flex; align-items: center; gap: 6px; margin-top: 11px; flex-wrap: wrap; }
+.tool-tag {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 5px;
+  padding: 3px 8px; display: inline-flex; align-items: center; gap: 5px;
+}
+.tool-tag button { background: none; border: none; color: var(--text-faint); cursor: pointer; font: inherit; padding: 0; }
+.tool-tag button:hover { color: var(--error); }
+.tool-add {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  color: var(--left-ink); background: none;
+  border: 1px dashed var(--left-border); border-radius: 5px;
+  padding: 3px 8px; cursor: pointer;
+}
+.srv-tok { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-faint); margin-top: 10px; }
+
+.addform { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.addrow { display: flex; gap: 8px; margin-bottom: 8px; }
+.dialog-actions { display: flex; align-items: center; gap: 8px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+.danger-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-dim); cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 6px 12px;
+}
+.danger-btn:hover { border-color: var(--error); color: var(--error); }
+
+@media (max-width: 900px) {
+  .wel-cols { flex-direction: column; }
+  .wel-col { padding: 28px 22px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ FIRST RUN — explain, then ask ═══════════════════════════ -->
+<div id="welcome">
+  <div class="wel-head">
+    <div class="wordmark">Beirt <em>two minds, one problem</em></div>
+    <div class="header-spacer"></div>
+    <div class="theme-btns" id="wel-themes"></div>
+  </div>
+
+  <div class="wel-cols">
+    <div class="wel-col left">
+      <div class="mark">α</div>
+      <div class="wel-inner">
+        <div class="kicker">What this is</div>
+        <h1 class="wel-h">Two independent Claude sessions. One problem. <em style="font-weight:400">No shared context.</em></h1>
+        <p class="wel-p">Send the same question to both panes at once and watch them diverge. Then hand one's answer to the other and watch it react.</p>
+        <div class="feat">
+          <div class="feat-row"><div class="feat-k">Two panes</div><div class="feat-v">α and β each keep their own model, system prompt and history.</div></div>
+          <div class="feat-row"><div class="feat-k">Cross-send</div><div class="feat-v">Fire β's reply at α as a new user message, in one click.</div></div>
+          <div class="feat-row"><div class="feat-k">Presets</div><div class="feat-v">Sceptic ⚔ Builder · Red ⚔ Blue team · Line ⚔ Dev editor.</div></div>
+          <div class="feat-row"><div class="feat-k">Web, files</div><div class="feat-v">Optional web search and fetch; drop in images, PDFs and code.</div></div>
+        </div>
+        <div class="tryit">
+          <div class="kicker" style="margin-bottom:8px">Try it like this</div>
+          <strong>α:</strong> a sceptical architect — find the failure mode.<br>
+          <strong>β:</strong> a pragmatic builder — find the path forward.<br>
+          Send your design. Cross-send β's proposal to α.
+        </div>
+      </div>
+    </div>
+
+    <div class="wel-col right">
+      <div class="mark">β</div>
+      <div class="wel-inner">
+        <div class="kicker">What it needs from you</div>
+        <h2 class="wel-h">One Anthropic API key</h2>
+        <div class="asks">
+          <div class="ask"><span class="dash">—</span><span>Requests go straight from this page to <code>api.anthropic.com</code>. There is no server in between and no account to make.</span></div>
+          <div class="ask"><span class="dash">—</span><span>Usage is billed to your own account. A running cost sits in the header from your first reply.</span></div>
+          <div class="ask"><span class="dash">—</span><span>Use a dedicated key with a spend limit. You can forget it from the header at any time.</span></div>
+        </div>
+
+        <div class="rule"></div>
+
+        <div class="flabel">API key</div>
+        <div class="keyrow">
+          <input type="password" class="keyfield" id="wel-key" placeholder="sk-ant-…" spellcheck="false" autocomplete="off">
+          <button class="go-btn" id="wel-go" onclick="verifyFromWelcome()">Verify</button>
+        </div>
+        <div id="wel-feedback"></div>
+
+        <div class="flabel" style="margin-top:22px">Keep it</div>
+        <div class="keep-btns">
+          <button class="keep-btn on" id="keep-session" onclick="setKeepMode('session')">This session only</button>
+          <button class="keep-btn" id="keep-remember" onclick="setKeepMode('remember')">Remember on this device</button>
+        </div>
+        <div class="note" id="keep-note">Held in memory for this tab only. Closing it forgets the key.</div>
+
+        <button class="disclose" onclick="openSettings('mcp')">
+          <span>Advanced — MCP connections</span>
+          <span class="count" id="wel-mcp-count">none</span>
+          <span class="chev">＋</span>
+        </button>
+
+        <div class="note" style="margin-top:22px">
+          <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a key ↗</a>
+          &nbsp;console.anthropic.com/settings/keys
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="credit">
+    <span>Designed and built by <a href="https://foxxelabs.ie" target="_blank" rel="noopener">FoxxeLabs</a></span>
+    <span style="opacity:0.5">·</span>
+    <span>MIT — fork of <a href="https://github.com/todd427/duel" target="_blank" rel="noopener">todd427/duel</a></span>
+    <span class="spacer">you bring the key; nobody else sees it</span>
+  </div>
+</div>
+
+<!-- ══ SETTINGS ════════════════════════════════════════════════ -->
+<div class="backdrop" id="settings-backdrop">
+  <div class="dialog">
+    <h2>Settings</h2>
+    <div class="tabs">
+      <button class="tab on" data-tab="key"   onclick="showTab('key')">Key</button>
+      <button class="tab"    data-tab="mcp"   onclick="showTab('mcp')">MCP</button>
+      <button class="tab"    data-tab="about" onclick="showTab('about')">About</button>
+    </div>
+
+    <div class="tabpane on" id="tab-key">
+      <div class="flabel">API key</div>
+      <div class="keyrow">
+        <input type="password" class="keyfield" id="set-key" placeholder="sk-ant-…" spellcheck="false" autocomplete="off">
+        <button class="go-btn" id="set-go" onclick="verifyFromSettings()">Verify</button>
+      </div>
+      <div id="set-feedback"></div>
+      <div class="flabel" style="margin-top:20px">Keep it</div>
+      <div class="keep-btns">
+        <button class="keep-btn" id="keep-session-2" onclick="setKeepMode('session')">This session only</button>
+        <button class="keep-btn" id="keep-remember-2" onclick="setKeepMode('remember')">Remember on this device</button>
+      </div>
+      <div class="note" id="keep-note-2"></div>
+      <div class="note" style="margin-top:14px">
+        Requests go from this page straight to <code>api.anthropic.com</code>. Nothing is proxied and nothing is logged.
+      </div>
+    </div>
+
+    <div class="tabpane" id="tab-mcp">
+      <div class="note" style="margin-top:0;margin-bottom:14px">
+        Beirt is another client for the Messages API, so it can reach any MCP server you can.
+        Connections you configured elsewhere cannot be imported — no API gives them out — but
+        these are remembered between sessions, and export as JSON if you want them on another machine.
+      </div>
+      <div id="srv-list"></div>
+      <div class="addform">
+        <div class="flabel">Add a server</div>
+        <div class="addrow">
+          <input class="tfield" id="new-name" placeholder="name" spellcheck="false" style="max-width:130px">
+          <input class="tfield" id="new-url" placeholder="https://…/mcp" spellcheck="false">
+        </div>
+        <div class="addrow">
+          <input class="tfield" id="new-token" type="password" placeholder="bearer token" spellcheck="false" autocomplete="off">
+          <button class="go-btn" onclick="addServer()">Add</button>
+        </div>
+        <div class="note">
+          A new server starts disabled with an empty allow-list — it can reach nothing until you name
+          the tools. Tokens follow the same session-or-remember choice as your API key.
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="danger-btn" onclick="exportServers()">Export JSON</button>
+        <button class="danger-btn" onclick="document.getElementById('mcp-import').click()">Import JSON</button>
+        <input type="file" id="mcp-import" accept=".json" style="display:none" onchange="importServers(this)">
+      </div>
+    </div>
+
+    <div class="tabpane" id="tab-about">
+      <p style="font-size:14px;line-height:1.65">
+        <strong>Beirt</strong> — Irish for a pair of people. Two independent Claude sessions,
+        side by side, with no shared context.
+      </p>
+      <p style="font-size:14px;line-height:1.65;margin-top:12px;color:var(--text-dim)">
+        An open, bring-your-own-key fork of
+        <a href="https://github.com/todd427/duel" target="_blank" rel="noopener">todd427/duel</a>.
+        The original routes through a hosted proxy that holds the key; this one has no server at all —
+        you supply the key and it stays in your browser.
+      </p>
+      <p style="font-size:14px;line-height:1.65;margin-top:12px;color:var(--text-dim)">
+        Designed and built by <a href="https://foxxelabs.ie" target="_blank" rel="noopener">FoxxeLabs</a>.
+        MIT licensed. No analytics, no logging, no build step.
+      </p>
+      <div class="note" style="margin-top:16px">
+        Themes: Paper and Folio are the house pair, Slate and Ink are neutral,
+        Terminal comes from <a href="https://rialu.ie" target="_blank" rel="noopener">rialú</a>.
+      </div>
+    </div>
+
+    <div class="dialog-actions">
+      <button class="danger-btn" onclick="forgetKey()">Forget key</button>
+      <button class="go-btn" style="margin-left:auto;padding:8px 18px" onclick="closeSettings()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ═════════════════════════════════════════════════════ -->
+<header>
+  <div class="wordmark">Beirt <em>two minds, one problem</em></div>
+  <div class="header-spacer"></div>
+  <div class="toolbar">
+    <div class="theme-btns" id="app-themes"></div>
+    <label class="web-toggle" title="Let both panes search and fetch the web (Anthropic-hosted, server-side)">
+      <input type="checkbox" id="webToggle">
+      <span>🌐 Web</span>
+    </label>
+    <select class="preset-sel" id="presetSel" onchange="applyPreset(this.value)" title="Load a system-prompt preset into both panes">
+      <option value="">Presets…</option>
+      <option value="archreview">Sceptic ⚔ Builder</option>
+      <option value="redblue">Red ⚔ Blue team</option>
+      <option value="writing">Line ⚔ Dev editor</option>
+      <option value="clear">Clear prompts</option>
+    </select>
+    <label class="maxtok" title="Max output tokens per reply">
+      <span>max tok</span>
+      <input type="number" id="maxTokens" min="256" max="64000" step="256" value="4096">
+    </label>
+    <div class="fontctl" title="Text size (auto-scales with window; nudge here)">
+      <button class="icon-btn" onclick="bumpFont(-1)" aria-label="Smaller text">A−</button>
+      <button class="icon-btn" onclick="bumpFont(1)"  aria-label="Larger text">A+</button>
+    </div>
+    <button class="key-chip" id="keyChip" onclick="openSettings('key')" title="Key and MCP settings">
+      <span class="kdot"></span><span id="keyChipLabel">no key</span>
+    </button>
+    <button class="icon-btn" id="spendBtn" onclick="resetSpend()" title="Session spend · click to reset">$0.0000</button>
+    <button class="icon-btn" onclick="exportMd()">Export MD</button>
+  </div>
+</header>
+
+<div class="panes">
+  <div class="pane pane-left" id="pane-left">
+    <div class="pane-head">
+      <span class="pane-sigil">α</span>
+      <span class="pane-label">Alpha</span>
+      <select class="model-sel" id="model-left">
+        <option value="claude-opus-4-8">Opus 4.8</option>
+        <option value="claude-opus-4-7">Opus 4.7</option>
+        <option value="claude-opus-4-6">Opus 4.6</option>
+        <option value="claude-sonnet-4-6" selected>Sonnet 4.6</option>
+        <option value="claude-haiku-4-5">Haiku 4.5</option>
+      </select>
+      <textarea class="sys-prompt" id="sys-left" placeholder="System prompt…"></textarea>
+      <button class="btn-clear" onclick="clearPane('left')">Clear</button>
+    </div>
+    <div class="messages" id="msgs-left" data-sigil="α"></div>
+  </div>
+
+  <div class="pane pane-right" id="pane-right">
+    <div class="pane-head">
+      <span class="pane-sigil">β</span>
+      <span class="pane-label">Beta</span>
+      <select class="model-sel" id="model-right">
+        <option value="claude-opus-4-8">Opus 4.8</option>
+        <option value="claude-opus-4-7">Opus 4.7</option>
+        <option value="claude-opus-4-6">Opus 4.6</option>
+        <option value="claude-sonnet-4-6" selected>Sonnet 4.6</option>
+        <option value="claude-haiku-4-5">Haiku 4.5</option>
+      </select>
+      <textarea class="sys-prompt" id="sys-right" placeholder="System prompt…"></textarea>
+      <button class="btn-clear" onclick="clearPane('right')">Clear</button>
+    </div>
+    <div class="messages" id="msgs-right" data-sigil="β"></div>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="route-row">
+    <span class="route-label">Send to</span>
+    <div class="route-btns">
+      <button class="route-btn" id="btn-left"  onclick="setRoute('left')">◀ Alpha</button>
+      <button class="route-btn active-both" id="btn-both" onclick="setRoute('both')">⬤ Both</button>
+      <button class="route-btn" id="btn-right" onclick="setRoute('right')">Beta ▶</button>
+    </div>
+    <span class="status" id="status">Ready</span>
+  </div>
+
+  <div id="attach-strip"></div>
+
+  <div class="compose-row">
+    <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">📎</button>
+    <input type="file" id="fileInput" style="display:none" multiple
+           accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.rb,.go,.rs,.java,.c,.cpp,.h,.css,.html,.xml,.yaml,.yml,.sh"
+           onchange="attachFiles(this.files)">
+    <textarea id="prompt" placeholder="State the problem, sketch the architecture, start the argument…" rows="2"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="send()">Send</button>
+  </div>
+</div>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────
+const API_URL     = 'https://api.anthropic.com/v1/messages';
+const MODELS_URL  = 'https://api.anthropic.com/v1/models';
+const API_VERSION = '2023-06-01';
+const MCP_BETA    = 'mcp-client-2025-11-20';
+const THEMES      = ['paper','folio','slate','ink','terminal'];
+
+// ── State ─────────────────────────────────────────────────────
+const histories    = { left: [], right: [] };
+let   route        = 'both';
+let   busy         = false;
+let   pendingFiles = [];   // [{ name, kind, mediaType, data }]
+
+// ── Key storage ───────────────────────────────────────────────
+// Session mode keeps the key in sessionStorage — gone when the tab closes.
+// Remember mode writes it to localStorage. Nothing is sent anywhere but
+// api.anthropic.com; there is no server in this app to send it to.
+let keepMode = localStorage.getItem('beirt_keep') || 'session';
+
+function getKey() {
+  return sessionStorage.getItem('beirt_key') || localStorage.getItem('beirt_key') || '';
+}
+function storeKey(k) {
+  if (keepMode === 'remember') { localStorage.setItem('beirt_key', k); sessionStorage.removeItem('beirt_key'); }
+  else                         { sessionStorage.setItem('beirt_key', k); localStorage.removeItem('beirt_key'); }
+  renderKeyChip();
+}
+function forgetKey() {
+  if (!confirm('Forget the API key on this device?')) return;
+  sessionStorage.removeItem('beirt_key');
+  localStorage.removeItem('beirt_key');
+  document.getElementById('set-key').value = '';
+  document.getElementById('wel-key').value = '';
+  renderKeyChip();
+  closeSettings();
+  showWelcome();
+}
+function setKeepMode(mode) {
+  keepMode = mode;
+  localStorage.setItem('beirt_keep', mode);
+  const k = getKey();
+  if (k) storeKey(k);            // move it to the right store
+  renderKeepUI();
+  renderKeyChip();
+}
+function renderKeepUI() {
+  const remembering = keepMode === 'remember';
+  const note = remembering
+    ? 'Stored in localStorage. Anything running in this page can read it — use a key with a spend limit.'
+    : 'Held in memory for this tab only. Closing it forgets the key.';
+  ['keep-session','keep-session-2'].forEach(id => document.getElementById(id)?.classList.toggle('on', !remembering));
+  ['keep-remember','keep-remember-2'].forEach(id => document.getElementById(id)?.classList.toggle('on', remembering));
+  ['keep-note','keep-note-2'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = note; });
+}
+function renderKeyChip() {
+  const chip  = document.getElementById('keyChip');
+  const label = document.getElementById('keyChipLabel');
+  const k = getKey();
+  chip.classList.remove('session','missing');
+  if (!k) { chip.classList.add('missing'); label.textContent = 'no key'; return; }
+  if (keepMode === 'session') { chip.classList.add('session'); label.textContent = 'session only'; return; }
+  label.textContent = 'sk-ant…' + k.slice(-4);
+}
+
+// ── Key verification (one free call to /v1/models) ────────────
+async function verifyKey(k) {
+  const res = await fetch(MODELS_URL, {
+    headers: {
+      'x-api-key': k,
+      'anthropic-version': API_VERSION,
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error?.message || ('HTTP ' + res.status));
+  }
+  const body = await res.json().catch(() => ({}));
+  return Array.isArray(body.data) ? body.data.length : 0;
+}
+
+function dots() {
+  return '<div class="checking"><div class="thinking-dots">' +
+    '<div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div>' +
+    '</div><span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--text-faint)">' +
+    'one free call to check the key…</span></div>';
+}
+
+async function runVerify(inputId, btnId, feedbackId, onGood) {
+  const input = document.getElementById(inputId);
+  const btn   = document.getElementById(btnId);
+  const out   = document.getElementById(feedbackId);
+  const k = input.value.trim();
+  if (!k) { out.innerHTML = '<div class="bad-note">⚠ Paste a key first.</div>'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+  out.innerHTML = dots();
+  try {
+    const n = await verifyKey(k);
+    storeKey(k);
+    out.innerHTML = '<div class="ok-note">✓ key accepted' + (n ? ' — ' + n + ' models reachable' : '') + '</div>';
+    btn.textContent = 'Start';
+    if (onGood) setTimeout(onGood, 450);
+  } catch (err) {
+    out.innerHTML = '<div class="bad-note">⚠ ' + escHtml(err.message) +
+      '<br>Check for a trailing space, or create a new key.</div>';
+    btn.textContent = 'Verify';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+const verifyFromWelcome  = () => runVerify('wel-key', 'wel-go', 'wel-feedback', hideWelcome);
+const verifyFromSettings = () => runVerify('set-key', 'set-go', 'set-feedback', null);
+
+// ── Welcome ───────────────────────────────────────────────────
+function showWelcome() {
+  document.getElementById('welcome').classList.add('show');
+  document.getElementById('wel-key').focus();
+}
+function hideWelcome() {
+  document.getElementById('welcome').classList.remove('show');
+  document.getElementById('prompt').focus();
+}
+
+// ── Settings ──────────────────────────────────────────────────
+function openSettings(tab) {
+  document.getElementById('set-key').value = getKey();
+  renderKeepUI();
+  renderServers();
+  document.getElementById('settings-backdrop').classList.add('show');
+  showTab(tab || 'key');
+}
+function closeSettings() {
+  document.getElementById('settings-backdrop').classList.remove('show');
+  document.getElementById('set-feedback').innerHTML = '';
+  document.getElementById('set-go').textContent = 'Verify';
+}
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
+  ['key','mcp','about'].forEach(n => document.getElementById('tab-' + n).classList.toggle('on', n === name));
+}
+document.getElementById('settings-backdrop').addEventListener('click', e => {
+  if (e.target.id === 'settings-backdrop') closeSettings();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeSettings();
+});
+
+// ── MCP servers ───────────────────────────────────────────────
+// Shape: [{ name, url, token, tools: [string], on: bool }]
+// Tokens live with the API key and follow the same keep mode, so a
+// session-only user writes nothing secret to disk.
+let servers = [];
+(function loadServers() {
+  try { servers = JSON.parse(localStorage.getItem('beirt_mcp') || '[]'); } catch { servers = []; }
+  try {
+    const toks = JSON.parse(sessionStorage.getItem('beirt_mcp_tokens') || '{}');
+    servers.forEach(s => { if (!s.token && toks[s.name]) s.token = toks[s.name]; });
+  } catch {}
+})();
+
+function saveServers() {
+  if (keepMode === 'remember') {
+    localStorage.setItem('beirt_mcp', JSON.stringify(servers));
+    sessionStorage.removeItem('beirt_mcp_tokens');
+  } else {
+    const toks = {};
+    localStorage.setItem('beirt_mcp', JSON.stringify(servers.map(s => {
+      toks[s.name] = s.token || '';
+      return { ...s, token: '' };
+    })));
+    sessionStorage.setItem('beirt_mcp_tokens', JSON.stringify(toks));
+  }
+  renderServers();
+  renderMcpCount();
+}
+
+function renderMcpCount() {
+  const el = document.getElementById('wel-mcp-count');
+  if (!el) return;
+  const on = servers.filter(s => s.on).length;
+  el.textContent = servers.length ? servers.length + ' server' + (servers.length === 1 ? '' : 's') +
+    ' · ' + on + ' enabled' : 'none';
+}
+
+function renderServers() {
+  const list = document.getElementById('srv-list');
+  if (!servers.length) {
+    list.innerHTML = '<div class="note" style="margin:0 0 4px">No servers yet.</div>';
+    renderMcpCount();
+    return;
+  }
+  list.innerHTML = servers.map((s, i) => `
+    <div class="srv ${s.on ? '' : 'off'}">
+      <div class="srv-top">
+        <span class="srv-dot"></span>
+        <span class="srv-name">${escHtml(s.name)}</span>
+        <span class="srv-url">${escHtml(s.url)}</span>
+        <button class="srv-tog ${s.on ? 'on' : ''}" onclick="toggleServer(${i})">${s.on ? 'ON' : 'OFF'}</button>
+        <button class="srv-rm" onclick="removeServer(${i})" title="Remove">✕</button>
+      </div>
+      <div class="srv-tools">
+        <span class="feat-k" style="padding:0;margin-right:4px">Allowed</span>
+        ${s.tools.map((t, j) => `<span class="tool-tag">${escHtml(t)}<button onclick="removeTool(${i},${j})">✕</button></span>`).join('')}
+        <button class="tool-add" onclick="addTool(${i})">＋ tool</button>
+      </div>
+      <div class="srv-tok">token ${s.token ? '••••••••' + escHtml(s.token.slice(-4)) : '(none)'}
+        · <button class="srv-rm" style="font-size:10px;border-bottom:1px solid currentColor" onclick="replaceToken(${i})">replace</button></div>
+    </div>`).join('');
+  renderMcpCount();
+}
+
+function addServer() {
+  const name  = document.getElementById('new-name').value.trim();
+  const url   = document.getElementById('new-url').value.trim();
+  const token = document.getElementById('new-token').value.trim();
+  if (!name || !url) { alert('A name and URL are both required.'); return; }
+  if (servers.some(s => s.name === name)) { alert('That name is already in use.'); return; }
+  servers.push({ name, url, token, tools: [], on: false });   // deny-by-default
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-url').value = '';
+  document.getElementById('new-token').value = '';
+  saveServers();
+}
+function removeServer(i) { servers.splice(i, 1); saveServers(); }
+function toggleServer(i) {
+  if (!servers[i].on && !servers[i].tools.length) {
+    alert('Name at least one allowed tool before enabling this server.');
+    return;
+  }
+  servers[i].on = !servers[i].on;
+  saveServers();
+}
+function addTool(i) {
+  const t = prompt('Tool name to allow (exactly as the server exposes it):');
+  if (t && t.trim()) { servers[i].tools.push(t.trim()); saveServers(); }
+}
+function removeTool(i, j) { servers[i].tools.splice(j, 1); if (!servers[i].tools.length) servers[i].on = false; saveServers(); }
+function replaceToken(i) {
+  const t = prompt('New bearer token for ' + servers[i].name + ':');
+  if (t !== null) { servers[i].token = t.trim(); saveServers(); }
+}
+
+function exportServers() {
+  // Tokens are deliberately stripped — an exported file should be safe to move.
+  const clean = servers.map(({ name, url, tools, on }) => ({ name, url, tools, on }));
+  const blob = new Blob([JSON.stringify(clean, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'beirt-mcp.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importServers(input) {
+  const f = input.files?.[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const incoming = JSON.parse(e.target.result);
+      if (!Array.isArray(incoming)) throw new Error('Expected a JSON array.');
+      incoming.forEach(s => {
+        if (!s.name || !s.url) return;
+        if (servers.some(x => x.name === s.name)) return;
+        servers.push({ name: s.name, url: s.url, token: '', tools: Array.isArray(s.tools) ? s.tools : [], on: false });
+      });
+      saveServers();
+      alert('Imported. Add a token to each server before enabling it.');
+    } catch (err) { alert('Could not read that file: ' + err.message); }
+  };
+  reader.readAsText(f);
+  input.value = '';
+}
+
+// ── Theme ─────────────────────────────────────────────────────
+// "auto" is stored as a preference; the resolved palette is Paper or Folio.
+let themePref = localStorage.getItem('beirt_theme') || 'auto';
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+function resolveTheme() {
+  if (themePref === 'auto') return darkQuery.matches ? 'folio' : 'paper';
+  return THEMES.includes(themePref) ? themePref : 'paper';
+}
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', resolveTheme());
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', themePref === b.dataset.t));
+  document.querySelectorAll('.auto-btn').forEach(b => b.classList.toggle('active', themePref === 'auto'));
+}
+function setTheme(t) {
+  themePref = t;
+  localStorage.setItem('beirt_theme', t);
+  applyTheme();
+}
+darkQuery.addEventListener('change', () => { if (themePref === 'auto') applyTheme(); });
+
+(function buildThemeSwitchers() {
+  const html =
+    '<button class="auto-btn" onclick="setTheme(\'auto\')" title="Follow the system setting">AUTO</button>' +
+    THEMES.map(t => `<button class="theme-btn" data-t="${t}" onclick="setTheme('${t}')" title="${t[0].toUpperCase() + t.slice(1)}"></button>`).join('');
+  document.getElementById('app-themes').innerHTML = html;
+  document.getElementById('wel-themes').innerHTML = html;
+  applyTheme();
+})();
+
+// ── Route ─────────────────────────────────────────────────────
+function setRoute(r) {
+  route = r;
+  document.getElementById('btn-left').className  = 'route-btn' + (r === 'left'  ? ' active-left'  : '');
+  document.getElementById('btn-both').className  = 'route-btn' + (r === 'both'  ? ' active-both'  : '');
+  document.getElementById('btn-right').className = 'route-btn' + (r === 'right' ? ' active-right' : '');
+}
+
+// ── Clear ─────────────────────────────────────────────────────
+function clearPane(side) {
+  histories[side] = [];
+  document.getElementById('msgs-' + side).innerHTML = '';
+}
+
+// ── File attachment ───────────────────────────────────────────
+const IMAGE_TYPES = ['image/jpeg','image/png','image/gif','image/webp'];
+const PDF_TYPE    = 'application/pdf';
+
+function attachFiles(fileList) {
+  Array.from(fileList).forEach(f => {
+    const reader = new FileReader();
+    if (IMAGE_TYPES.includes(f.type)) {
+      reader.onload = e => {
+        pendingFiles.push({ name: f.name, kind: 'image', mediaType: f.type, data: e.target.result.split(',')[1] });
+        renderStrip();
+      };
+      reader.readAsDataURL(f);
+    } else if (f.type === PDF_TYPE) {
+      reader.onload = e => {
+        pendingFiles.push({ name: f.name, kind: 'document', mediaType: PDF_TYPE, data: e.target.result.split(',')[1] });
+        renderStrip();
+      };
+      reader.readAsDataURL(f);
+    } else {
+      reader.onload = e => {
+        pendingFiles.push({ name: f.name, kind: 'text', mediaType: f.type || 'text/plain', data: e.target.result });
+        renderStrip();
+      };
+      reader.readAsText(f);
+    }
+  });
+  document.getElementById('fileInput').value = '';
+}
+
+function removeFile(idx) { pendingFiles.splice(idx, 1); renderStrip(); }
+
+function renderStrip() {
+  const strip = document.getElementById('attach-strip');
+  strip.innerHTML = '';
+  strip.classList.toggle('has-files', pendingFiles.length > 0);
+  pendingFiles.forEach((f, i) => {
+    const pill = document.createElement('div');
+    pill.className = 'attach-pill';
+    const icon = f.kind === 'image' ? '🖼' : f.kind === 'document' ? '📄' : '📝';
+    pill.innerHTML = `<span>${icon}</span><span class="pill-name">${escHtml(f.name)}</span>` +
+      `<span>${f.kind}</span><button class="pill-rm" onclick="removeFile(${i})" title="Remove">✕</button>`;
+    strip.appendChild(pill);
+  });
+}
+
+// ── Build API content array for a user turn ───────────────────
+function buildContent(text, attachments) {
+  if (!attachments || attachments.length === 0) return text;
+  const parts = [];
+  attachments.forEach(f => {
+    if (f.kind === 'image') {
+      parts.push({ type: 'image', source: { type: 'base64', media_type: f.mediaType, data: f.data } });
+    } else if (f.kind === 'document') {
+      parts.push({ type: 'document', source: { type: 'base64', media_type: f.mediaType, data: f.data } });
+    } else {
+      parts.push({ type: 'text', text: `\`\`\`\n// ${f.name}\n${f.data}\n\`\`\`` });
+    }
+  });
+  if (text) parts.push({ type: 'text', text });
+  return parts;
+}
+
+// ── Markdown renderer ─────────────────────────────────────────
+function renderMd(text) {
+  if (typeof text !== 'string') return '';
+  const blocks = [];
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const i = blocks.length;
+    blocks.push(`<pre><code>${escHtml(code.trim())}</code></pre>`);
+    return `\x00BLOCK${i}\x00`;
+  });
+  text = text
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`)
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/^---+$/gm, '<hr>')
+    .replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>');
+  text = text.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
+  text = text.split(/\n\n+/).map(p => {
+    p = p.trim();
+    if (!p || p.startsWith('<h') || p.startsWith('<ul') || p.startsWith('<hr') || p.startsWith('\x00')) return p;
+    return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+  }).join('\n');
+  blocks.forEach((b, i) => { text = text.replace(`\x00BLOCK${i}\x00`, b); });
+  return text;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Append message ────────────────────────────────────────────
+function appendMsg(side, role, content, attachments) {
+  const container = document.getElementById('msgs-' + side);
+  const wrapper   = document.createElement('div');
+  wrapper.className = `msg ${role}`;
+
+  const roleEl = document.createElement('div');
+  roleEl.className = 'msg-role';
+  roleEl.textContent = role === 'user' ? 'you' : side === 'left' ? 'α' : 'β';
+  wrapper.appendChild(roleEl);
+
+  if (role === 'user' && attachments && attachments.length > 0) {
+    attachments.forEach(f => {
+      const pill = document.createElement('div');
+      pill.className = 'msg-attachment';
+      const icon = f.kind === 'image' ? '🖼' : f.kind === 'document' ? '📄' : '📝';
+      pill.innerHTML = `<span>${icon}</span> <span>${escHtml(f.name)}</span> <span>${f.kind}</span>`;
+      wrapper.appendChild(pill);
+    });
+  }
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.innerHTML = renderMd(typeof content === 'string' ? content : '[multipart message]');
+  wrapper.appendChild(body);
+
+  if (role === 'assistant') {
+    const xBtn = document.createElement('button');
+    xBtn.className = 'cross-send';
+    const target = side === 'left' ? 'right' : 'left';
+    xBtn.textContent = `→ send to ${side === 'left' ? 'β' : 'α'}`;
+    xBtn.onclick = () => crossSend(content, target);
+    wrapper.appendChild(xBtn);
+  }
+
+  container.appendChild(wrapper);
+  container.scrollTop = container.scrollHeight;
+}
+
+// ── Thinking indicator ────────────────────────────────────────
+function showThinking(side) {
+  const container = document.getElementById('msgs-' + side);
+  const el = document.createElement('div');
+  el.className = 'thinking';
+  el.id = 'thinking-' + side;
+  el.innerHTML = '<div class="thinking-dots"><div class="thinking-dot"></div>' +
+    '<div class="thinking-dot"></div><div class="thinking-dot"></div></div>';
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+function hideThinking(side) {
+  document.getElementById('thinking-' + side)?.remove();
+}
+
+// ── Error ─────────────────────────────────────────────────────
+function showError(side, msg, keyProblem) {
+  const container = document.getElementById('msgs-' + side);
+  const el = document.createElement('div');
+  el.className = 'error-bubble';
+  el.textContent = '⚠ ' + msg;
+  if (keyProblem) {
+    const b = document.createElement('button');
+    b.textContent = 'Open key settings';
+    b.onclick = () => openSettings('key');
+    el.append(' ', b);
+  }
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+
+// ── Text size ─────────────────────────────────────────────────
+let fontScale = parseFloat(localStorage.getItem('beirt_fs')) || 1;
+function applyFont() { document.documentElement.style.setProperty('--fs', fontScale); }
+function bumpFont(dir) {
+  fontScale = Math.min(1.6, Math.max(0.8, +(fontScale + dir * 0.1).toFixed(2)));
+  localStorage.setItem('beirt_fs', fontScale);
+  applyFont();
+}
+applyFont();
+
+// ── Spend tracking ────────────────────────────────────────────
+// Priced per 1M tokens. Cache reads ≈ 0.1× input, cache writes ≈ 1.25× input.
+// These are local estimates, not a bill — your console is the source of truth.
+const PRICING = {
+  'claude-opus-4-8':   { in: 5, out: 25 },
+  'claude-opus-4-7':   { in: 5, out: 25 },
+  'claude-opus-4-6':   { in: 5, out: 25 },
+  'claude-sonnet-4-6': { in: 3, out: 15 },
+  'claude-haiku-4-5':  { in: 1, out: 5 },
+};
+let spend = { usd: 0, in: 0, out: 0 };
+try { spend = Object.assign(spend, JSON.parse(localStorage.getItem('beirt_spend') || '{}')); } catch {}
+
+function recordUsage(model, u) {
+  const p = PRICING[model] || { in: 5, out: 25 };
+  spend.usd += (u.in * p.in + u.cr * p.in * 0.1 + u.cc * p.in * 1.25 + u.out * p.out) / 1e6;
+  spend.in  += u.in + u.cr + u.cc;
+  spend.out += u.out;
+  try { localStorage.setItem('beirt_spend', JSON.stringify(spend)); } catch {}
+  renderSpend();
+}
+function renderSpend() {
+  const el = document.getElementById('spendBtn');
+  if (!el) return;
+  el.textContent = '$' + spend.usd.toFixed(4);
+  el.title = `Session spend (estimate) · in ${spend.in.toLocaleString()} tok · out ${spend.out.toLocaleString()} tok · click to reset`;
+}
+function resetSpend() {
+  if (!confirm('Reset the session spend counter?')) return;
+  spend = { usd: 0, in: 0, out: 0 };
+  localStorage.setItem('beirt_spend', JSON.stringify(spend));
+  renderSpend();
+}
+
+// ── Max output tokens ─────────────────────────────────────────
+function maxTokens() {
+  const v = parseInt(document.getElementById('maxTokens').value, 10);
+  if (!Number.isFinite(v) || v < 256) return 4096;
+  return Math.min(v, 64000);
+}
+
+// ── Tool + server assembly (was chat.js, now client-side) ─────
+function buildTools() {
+  const tools = [];
+  if (document.getElementById('webToggle')?.checked) {
+    tools.push({ type: 'web_search_20250305', name: 'web_search', max_uses: 5 });
+    tools.push({
+      type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 5,
+      citations: { enabled: true }, max_content_tokens: 50000,
+    });
+  }
+  const mcpServers = [];
+  servers.filter(s => s.on && s.token && s.tools.length).forEach(s => {
+    mcpServers.push({ type: 'url', url: s.url, name: s.name, authorization_token: s.token });
+    const configs = {};
+    for (const t of s.tools) configs[t] = { enabled: true };
+    tools.push({ type: 'mcp_toolset', mcp_server_name: s.name, default_config: { enabled: false }, configs });
+  });
+  return { tools, mcpServers };
+}
+
+// ── Claude API call (streaming SSE, straight from the browser) ─
+async function streamClaude(side, userText, attachments, hooks) {
+  const key = getKey();
+  if (!key) { const e = new Error('No API key set.'); e.keyProblem = true; throw e; }
+
+  const model = document.getElementById('model-' + side).value;
+  const sys   = document.getElementById('sys-' + side).value.trim();
+
+  histories[side].push({ role: 'user', content: buildContent(userText, attachments) });
+
+  let answer = '', stopReason = null, guard = 0;
+
+  while (true) {
+    const { tools, mcpServers } = buildTools();
+
+    const payload = {
+      model,
+      max_tokens: maxTokens(),
+      messages: histories[side],
+      stream: true,
+    };
+    if (sys) payload.system = sys;
+    if (tools.length) payload.tools = tools;
+    if (mcpServers.length) payload.mcp_servers = mcpServers;
+
+    const headers = {
+      'content-type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': API_VERSION,
+      'anthropic-dangerous-direct-browser-access': 'true',
+    };
+    if (mcpServers.length) headers['anthropic-beta'] = MCP_BETA;
+
+    const res = await fetch(API_URL, { method: 'POST', headers, body: JSON.stringify(payload) });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const e = new Error(err?.error?.message || `HTTP ${res.status}`);
+      if (res.status === 401 || res.status === 403) e.keyProblem = true;
+      throw e;
+    }
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const blocks = [];
+    const partial = {};
+    const u = { in: 0, out: 0, cr: 0, cc: 0 };
+    stopReason = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let idx;
+      while ((idx = buffer.indexOf('\n\n')) !== -1) {
+        const frame = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        for (const line of frame.split('\n')) {
+          const t = line.trimStart();
+          if (!t.startsWith('data:')) continue;
+          const raw = t.slice(5).trim();
+          if (!raw) continue;
+          let evt;
+          try { evt = JSON.parse(raw); } catch { continue; }
+
+          if (evt.type === 'content_block_start') {
+            blocks[evt.index] = structuredClone(evt.content_block);
+          } else if (evt.type === 'content_block_delta') {
+            const b = blocks[evt.index];
+            if (evt.delta?.type === 'text_delta') {
+              if (b) b.text = (b.text || '') + evt.delta.text;
+              answer += evt.delta.text;
+              hooks.onText(answer);
+            } else if (evt.delta?.type === 'input_json_delta') {
+              partial[evt.index] = (partial[evt.index] || '') + evt.delta.partial_json;
+            }
+          } else if (evt.type === 'content_block_stop') {
+            const b = blocks[evt.index];
+            if (b && (b.type === 'server_tool_use' || b.type === 'mcp_tool_use')) {
+              try { b.input = JSON.parse(partial[evt.index] || '{}'); } catch {}
+              if (b.type === 'mcp_tool_use') hooks.onTool(`🧠 ${b.server_name || 'mcp'}: ${b.name}`);
+              else if (b.name === 'web_search') hooks.onTool(`🔍 searched: ${b.input?.query ?? ''}`);
+              else if (b.name === 'web_fetch') hooks.onTool(`🌐 fetched: ${b.input?.url ?? ''}`);
+              else hooks.onTool(`🛠 ${b.name}`);
+            }
+          } else if (evt.type === 'message_start') {
+            const mu = evt.message?.usage || {};
+            u.in = mu.input_tokens || 0;
+            u.cr = mu.cache_read_input_tokens || 0;
+            u.cc = mu.cache_creation_input_tokens || 0;
+          } else if (evt.type === 'message_delta') {
+            if (evt.delta?.stop_reason) stopReason = evt.delta.stop_reason;
+            if (evt.usage?.output_tokens != null) u.out = evt.usage.output_tokens;
+          } else if (evt.type === 'error') {
+            throw new Error(evt.error?.message || 'stream error');
+          }
+        }
+      }
+    }
+
+    recordUsage(model, u);
+    histories[side].push({ role: 'assistant', content: blocks.filter(Boolean) });
+
+    if (stopReason === 'pause_turn' && guard++ < 5) continue;
+    return { text: answer, stopReason };
+  }
+}
+
+// ── Live assistant bubble (streaming target) ──────────────────
+function startAssistantMsg(side) {
+  const container = document.getElementById('msgs-' + side);
+  const wrapper   = document.createElement('div');
+  wrapper.className = 'msg assistant';
+  const roleEl = document.createElement('div');
+  roleEl.className = 'msg-role';
+  roleEl.textContent = side === 'left' ? 'α' : 'β';
+  wrapper.appendChild(roleEl);
+  const tools = document.createElement('div');
+  tools.className = 'tool-trace';
+  wrapper.appendChild(tools);
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  wrapper.appendChild(body);
+  container.appendChild(wrapper);
+  return { container, wrapper, tools, body };
+}
+
+function addToolChip(h, label) {
+  const chip = document.createElement('div');
+  chip.className = 'tool-chip';
+  chip.textContent = label;
+  h.tools.appendChild(chip);
+  h.container.scrollTop = h.container.scrollHeight;
+}
+
+function finalizeAssistant(side, h, fullText, stopReason) {
+  h.body.innerHTML = renderMd(fullText);
+  if (stopReason === 'max_tokens' || stopReason === 'refusal') {
+    const note = document.createElement('div');
+    note.className = 'trunc-note' + (stopReason === 'refusal' ? ' refusal' : '');
+    note.textContent = stopReason === 'refusal'
+      ? '⚠ refused — model declined for safety reasons; rephrase or try a different model'
+      : '⚠ truncated — hit max tokens; raise “max tok” and ask it to continue';
+    h.wrapper.appendChild(note);
+  }
+  const xBtn = document.createElement('button');
+  xBtn.className = 'cross-send';
+  const target = side === 'left' ? 'right' : 'left';
+  xBtn.textContent = `→ send to ${side === 'left' ? 'β' : 'α'}`;
+  xBtn.onclick = () => crossSend(fullText, target);
+  h.wrapper.appendChild(xBtn);
+  h.container.scrollTop = h.container.scrollHeight;
+}
+
+// ── Run one streamed turn into a pane ─────────────────────────
+async function runStream(side, userText, attachments) {
+  let h = null;
+  const ensure = () => { if (!h) { hideThinking(side); h = startAssistantMsg(side); } return h; };
+  try {
+    const { text, stopReason } = await streamClaude(side, userText, attachments, {
+      onText: acc => { ensure(); h.body.innerHTML = renderMd(acc); h.container.scrollTop = h.container.scrollHeight; },
+      onTool: label => { ensure(); addToolChip(h, label); },
+    });
+    ensure();
+    finalizeAssistant(side, h, text, stopReason);
+  } catch (err) {
+    hideThinking(side);
+    if (h) h.wrapper.remove();
+    showError(side, err.message, !!err.keyProblem);
+  }
+}
+
+// ── Send ──────────────────────────────────────────────────────
+async function send() {
+  if (busy) return;
+  if (!getKey()) { openSettings('key'); return; }
+
+  const promptEl    = document.getElementById('prompt');
+  const prompt      = promptEl.value.trim();
+  const attachments = [...pendingFiles];
+  if (!prompt && attachments.length === 0) return;
+
+  const sides = route === 'both' ? ['left','right'] : [route];
+
+  busy = true;
+  document.getElementById('sendBtn').disabled = true;
+  promptEl.value = '';
+  promptEl.style.height = 'auto';
+  pendingFiles = [];
+  renderStrip();
+  setStatus('Thinking…');
+
+  sides.forEach(s => appendMsg(s, 'user', prompt, attachments));
+  sides.forEach(s => showThinking(s));
+
+  await Promise.all(sides.map(s => runStream(s, prompt, attachments)));
+  setStatus('Ready');
+
+  busy = false;
+  document.getElementById('sendBtn').disabled = false;
+  promptEl.focus();
+}
+
+// ── Cross-send ────────────────────────────────────────────────
+async function crossSend(content, targetSide) {
+  if (busy) return;
+  if (!getKey()) { openSettings('key'); return; }
+
+  busy = true;
+  document.getElementById('sendBtn').disabled = true;
+  setStatus('Cross-sending…');
+
+  appendMsg(targetSide, 'user', content);
+  showThinking(targetSide);
+
+  await runStream(targetSide, content);
+  setStatus('Ready');
+
+  busy = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+// ── Export Markdown ───────────────────────────────────────────
+function exportMd() {
+  const now = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  let md = `# Beirt Session\n_Exported: ${now}_\n\n`;
+
+  if (histories.left.length === 0 && histories.right.length === 0) { alert('Nothing to export.'); return; }
+
+  const dump = (label, hist) => {
+    let out = `## ${label}\n\n`;
+    hist.forEach(m => {
+      const text = Array.isArray(m.content)
+        ? m.content.filter(p => p.type === 'text').map(p => p.text).join('\n')
+        : m.content;
+      out += `**${m.role === 'user' ? 'You' : label.slice(0,1)}:** ${text}\n\n`;
+    });
+    return out;
+  };
+
+  md += dump('α Alpha', histories.left) + `---\n\n` + dump('β Beta', histories.right);
+
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `beirt-${now.replace(/[: ]/g,'-')}.md`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Auto-resize textarea ──────────────────────────────────────
+const promptEl = document.getElementById('prompt');
+promptEl.addEventListener('input', () => {
+  promptEl.style.height = 'auto';
+  promptEl.style.height = Math.min(promptEl.scrollHeight, 180) + 'px';
+});
+
+// ── Drag-and-drop onto input area ─────────────────────────────
+const inputArea = document.querySelector('.input-area');
+inputArea.addEventListener('dragover', e => { e.preventDefault(); inputArea.style.outline = '2px dashed var(--left-accent)'; });
+inputArea.addEventListener('dragleave', () => { inputArea.style.outline = ''; });
+inputArea.addEventListener('drop', e => {
+  e.preventDefault();
+  inputArea.style.outline = '';
+  if (e.dataTransfer.files.length) attachFiles(e.dataTransfer.files);
+});
+
+// ── Web access toggle (persisted; default on) ─────────────────
+const webToggle = document.getElementById('webToggle');
+webToggle.checked = (localStorage.getItem('beirt_web') ?? '1') === '1';
+webToggle.addEventListener('change', () => localStorage.setItem('beirt_web', webToggle.checked ? '1' : '0'));
+
+// ── Presets ───────────────────────────────────────────────────
+const PRESETS = {
+  archreview: {
+    left:  'You are a sceptical software architect. Challenge every assumption. Find the failure mode, the edge case, the thing that breaks at scale. Be concise and specific.',
+    right: 'You are a pragmatic builder. Find the simplest design that ships and works. Be concise and specific.'
+  },
+  redblue: {
+    left:  'You are a red-team security reviewer. Find how this can be attacked, abused, or broken. Think like an adversary.',
+    right: 'You are a blue-team defender. Propose mitigations, hardening, and detection for the risks raised. Be practical.'
+  },
+  writing: {
+    left:  'You are a demanding line editor. Cut fluff, flag weak arguments, tighten prose. Quote the lines you would change.',
+    right: 'You are a generous developmental editor. Say what works, how to amplify it, and sketch the next draft.'
+  }
+};
+function applyPreset(name) {
+  if (name === 'clear') {
+    document.getElementById('sys-left').value  = '';
+    document.getElementById('sys-right').value = '';
+  } else if (PRESETS[name]) {
+    document.getElementById('sys-left').value  = PRESETS[name].left;
+    document.getElementById('sys-right').value = PRESETS[name].right;
+  }
+  document.getElementById('presetSel').value = '';
+  saveSettings();
+}
+
+// ── Persist panel settings ────────────────────────────────────
+const PERSIST_IDS = ['sys-left','sys-right','model-left','model-right','maxTokens'];
+function saveSettings() {
+  const data = {};
+  PERSIST_IDS.forEach(id => { data[id] = document.getElementById(id).value; });
+  localStorage.setItem('beirt_settings', JSON.stringify(data));
+}
+(function restoreSettings() {
+  let data;
+  try { data = JSON.parse(localStorage.getItem('beirt_settings') || '{}'); } catch { data = {}; }
+  PERSIST_IDS.forEach(id => {
+    if (data[id] != null && data[id] !== '') document.getElementById(id).value = data[id];
+  });
+})();
+PERSIST_IDS.forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input',  saveSettings);
+  el.addEventListener('change', saveSettings);
+});
+
+// ── Boot ──────────────────────────────────────────────────────
+renderSpend();
+renderKeepUI();
+renderKeyChip();
+renderServers();
+if (!getKey()) showWelcome();
+</script>
+</body>
+</html>
