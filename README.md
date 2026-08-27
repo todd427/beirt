@@ -17,6 +17,7 @@ local clone. They are the same file, and neither one has anything behind it.
 
 - Two independent panes — **α Alpha** and **β Beta** — each with its own model, system prompt, and conversation history
 - **Streaming** — responses render token-by-token live in each pane (both panes stream in parallel)
+- **Reasoning** — on models that think by default (Fable 5, Opus 5, Sonnet 5) the pane streams a summary of the model's reasoning while it works, then folds it away once the answer starts. Thinking is billed the same whether or not it is shown, so this costs nothing extra
 - **Web access** — optional `🌐 Web` toggle gives both panes Anthropic-hosted web search + fetch; tool activity is shown inline
 - **MCP connections** — add your own MCP servers from **⚙ Advanced** in the header: URL, bearer token, and a per-server allow-list of permitted tools. Off by default, deny-by-default, remembered between sessions, exportable as JSON
 - **Route selector** — send to Alpha only, Both (parallel), or Beta only
