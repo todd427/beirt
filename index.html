@@ -2266,8 +2266,20 @@ async function runStream(side, userText, attachments) {
         h.body.innerHTML = renderMd(err.partial);
         const note = document.createElement('div');
         note.className = 'trunc-note';
-        note.textContent = `⚠ connection cut mid-answer after ${err.elapsed ?? '?'}s — ${err.message}. This much arrived and was billed. It is not in the conversation history; send again to continue.`;
+        note.textContent = `⚠ connection cut after ${err.elapsed ?? '?'}s — ${err.message}. This much arrived and was billed, and is not in the conversation history.`;
         h.wrapper.appendChild(note);
+        // Resuming by hand means re-describing the question. This carries the
+        // partial across as plain context instead: no half-finished tool call
+        // or unsigned thinking block goes back, which is what broke history
+        // before. It is a fresh turn and bills as one, so it stays a choice.
+        const cont = document.createElement('button');
+        cont.className = 'cross-send';
+        cont.textContent = '⟳ continue from here';
+        cont.onclick = () => {
+          cont.disabled = true;
+          crossSend(`You were answering and the connection dropped part-way. Here is what arrived:\n\n${err.partial}\n\nCarry on from exactly where that stops. Do not repeat it.`, side);
+        };
+        h.wrapper.appendChild(cont);
         return;
       }
       if (err.retryable && attempt < MAX_RETRIES) {
