@@ -510,6 +510,29 @@ textarea.sys-prompt:focus { color: var(--text); }
 
 .msg.user { align-items: flex-end; }
 
+/* Reasoning summary. Collapses itself once the answer starts, so it reads as
+   progress while waiting and gets out of the way afterwards. */
+.think {
+  align-self: flex-start;
+  max-width: 92%;
+  margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+.think > summary {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-faint); cursor: pointer; list-style: none;
+}
+.think > summary::-webkit-details-marker { display: none; }
+.think > summary::before { content: '▸ '; }
+.think[open] > summary::before { content: '▾ '; }
+.think-body {
+  font-size: calc(var(--msg) * 0.92);
+  line-height: 1.6; color: var(--text-dim);
+  margin-top: 6px; white-space: pre-wrap;
+}
+
 .msg-body {
   max-width: 92%;
   padding: 10px 13px;
@@ -1331,6 +1354,11 @@ const MCP_BETA    = 'mcp-client-2025-11-20';
 const MAX_RETRIES = 2;  // transient stream faults only; each retry re-bills input
 // Models taking the dynamic-filtering server tools. Everything else keeps the
 // basic variants — the pair is per-model, not per-account.
+// Models that think by default. `display` only changes visibility — thinking
+// happens and bills the same either way — so asking for a summary here costs
+// nothing. Sending `adaptive` to a model that does NOT think by default would
+// switch thinking on and add cost; sending it to Haiku 4.5 errors outright.
+const THINKS_BY_DEFAULT = new Set(['claude-fable-5', 'claude-opus-5', 'claude-sonnet-5']);
 const DYNAMIC_WEB = new Set([
   'claude-fable-5', 'claude-opus-5', 'claude-opus-4-8', 'claude-opus-4-7', 'claude-opus-4-6',
   'claude-sonnet-5', 'claude-sonnet-4-6',
@@ -1908,7 +1936,7 @@ async function streamClaude(side, userText, attachments, hooks) {
 
   histories[side].push({ role: 'user', content: buildContent(userText, attachments) });
 
-  let answer = '', stopReason = null, guard = 0, asstIdx = -1;
+  let answer = '', thinking = '', stopReason = null, guard = 0, asstIdx = -1;
 
   while (true) {
     const { tools, mcpServers } = buildTools(model);
@@ -1920,6 +1948,7 @@ async function streamClaude(side, userText, attachments, hooks) {
       stream: true,
     };
     if (sys) payload.system = sys;
+    if (THINKS_BY_DEFAULT.has(model)) payload.thinking = { type: 'adaptive', display: 'summarized' };
     if (tools.length) payload.tools = tools;
     if (mcpServers.length) payload.mcp_servers = mcpServers;
 
@@ -1979,6 +2008,8 @@ async function streamClaude(side, userText, attachments, hooks) {
               partial[evt.index] = (partial[evt.index] || '') + evt.delta.partial_json;
             } else if (evt.delta?.type === 'thinking_delta') {
               if (b) b.thinking = (b.thinking || '') + evt.delta.thinking;
+              thinking += evt.delta.thinking;
+              hooks.onThink(thinking);
             } else if (evt.delta?.type === 'signature_delta') {
               if (b) b.signature = (b.signature || '') + evt.delta.signature;
             }
@@ -2051,6 +2082,17 @@ function startAssistantMsg(side) {
   roleEl.className = 'msg-role';
   roleEl.textContent = side === 'left' ? 'α' : 'β';
   wrapper.appendChild(roleEl);
+  const think = document.createElement('details');
+  think.className = 'think';
+  think.open = true;
+  think.style.display = 'none';
+  const summary = document.createElement('summary');
+  summary.textContent = 'reasoning';
+  think.appendChild(summary);
+  const thinkBody = document.createElement('div');
+  thinkBody.className = 'think-body';
+  think.appendChild(thinkBody);
+  wrapper.appendChild(think);
   const tools = document.createElement('div');
   tools.className = 'tool-trace';
   wrapper.appendChild(tools);
@@ -2058,7 +2100,7 @@ function startAssistantMsg(side) {
   body.className = 'msg-body';
   wrapper.appendChild(body);
   container.appendChild(wrapper);
-  return { container, wrapper, tools, body };
+  return { container, wrapper, think, thinkBody, tools, body };
 }
 
 function addToolChip(h, label) {
@@ -2102,7 +2144,18 @@ async function runStream(side, userText, attachments) {
   for (let attempt = 0; ; attempt++) {
     try {
       const { text, stopReason } = await streamClaude(side, userText, attachments, {
-        onText: acc => { ensure(); h.body.innerHTML = renderMd(acc); h.container.scrollTop = h.container.scrollHeight; },
+        onText: acc => {
+          ensure();
+          if (h.think && !h.folded) { h.think.open = false; h.folded = true; }
+          h.body.innerHTML = renderMd(acc);
+          h.container.scrollTop = h.container.scrollHeight;
+        },
+        onThink: txt => {
+          ensure();
+          h.think.style.display = '';
+          h.thinkBody.textContent = txt;
+          h.container.scrollTop = h.container.scrollHeight;
+        },
         onTool: label => { ensure(); addToolChip(h, label); },
       });
       ensure();
@@ -2112,7 +2165,7 @@ async function runStream(side, userText, attachments) {
       histories[side].length = mark;
       if (err.retryable && attempt < MAX_RETRIES) {
         // Keep the bubble so the pane does not flicker empty; say why it stalled.
-        if (h) { h.tools.innerHTML = ''; h.body.innerHTML = ''; addToolChip(h, `\u21bb ${err.message} — retrying`); }
+        if (h) { h.tools.innerHTML = ''; h.body.innerHTML = ''; h.thinkBody.textContent = ''; h.think.style.display = 'none'; addToolChip(h, `\u21bb ${err.message} — retrying`); }
         await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
         continue;
       }
