@@ -25,7 +25,8 @@ local clone. They are the same file, and neither one has anything behind it.
 - **Presets** — one-click system-prompt pairs (Sceptic ⚔ Builder, Red ⚔ Blue team, Line ⚔ Dev editor)
 - **Configurable max tokens** — set the per-reply output budget; truncated replies are flagged
 - **File attachments** — images (vision), PDFs, text/code files; drag and drop works
-- **Spend tracking** — a running session cost estimate + token totals, computed per-model from the API's `usage`
+- **Spend tracking** — a running session cost estimate + token totals, computed per-model from the API's `usage`. Anthropic prices in USD; Settings can show the figure in EUR or GBP at a rate you set, with the USD amount kept in the tooltip
+- **Copy** — every question and answer has a copy button, writing rendered HTML for documents and the original Markdown for editors
 - **Export MD** — downloads both conversation threads as a timestamped Markdown file
 - **Readable type** — message/code/compose text auto-scales with window width, plus an `A− / A+` nudge (persists)
 - **Five themes + Auto** — Paper and Folio (the house pair), Slate and Ink (neutral), Terminal (monochrome green, from [rialú](https://rialu.ie)). Auto follows your OS light/dark setting

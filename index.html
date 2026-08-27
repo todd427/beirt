@@ -577,6 +577,10 @@ textarea.sys-prompt:focus { color: var(--text); }
 }
 
 /* ── Cross-send ────────────────────────────────────────────── */
+.msg-actions { display: flex; gap: 6px; align-items: center; }
+.msg.user .msg-actions { align-self: flex-end; }
+.copy-btn { min-width: 62px; }
+
 .cross-send {
   align-self: flex-start;
   background: none;
@@ -1209,6 +1213,22 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
         Requests go from this page straight to <code>api.anthropic.com</code>. Nothing is proxied and nothing is logged.
       </div>
 
+      <div class="flabel" style="margin-top:22px">Show spend in</div>
+      <div class="keyrow">
+        <select class="model-sel" id="cur-code" style="flex:0 0 auto"
+                onchange="setCurrency(this.value, document.getElementById('cur-rate').value)">
+          <option value="USD">USD $</option>
+          <option value="EUR">EUR €</option>
+          <option value="GBP">GBP £</option>
+        </select>
+        <span id="cur-rate-row" style="display:none;align-items:center;gap:8px;flex:1">
+          <span class="note" style="margin:0">per USD</span>
+          <input type="number" class="tfield" id="cur-rate" step="0.01" min="0.01" style="max-width:110px"
+                 onchange="setCurrency(document.getElementById('cur-code').value, this.value)">
+        </span>
+      </div>
+      <div class="note" id="cur-note"></div>
+
       <div class="flabel" style="margin-top:22px">Streaming</div>
       <div class="keep-btns">
         <button class="keep-btn" id="stream-auto" onclick="setStreamMode('auto')">Auto</button>
@@ -1520,6 +1540,7 @@ function openSettings(tab) {
   document.getElementById('set-key').value = getKey();
   renderKeepUI();
   renderStreamUI();
+  renderCurrencyUI();
   renderServers();
   document.getElementById('settings-backdrop').classList.add('show');
   showTab(tab || 'key');
@@ -1808,6 +1829,36 @@ function escHtml(s) {
 }
 
 // ── Append message ────────────────────────────────────────────
+// Writes both flavours: text/html so a document keeps the formatting, and
+// text/plain carrying the markdown so an editor gets the source rather than
+// flattened prose. Images inside the HTML travel with it.
+async function copyMsg(btn, markdown, html) {
+  const done = (label) => { btn.textContent = label; setTimeout(() => { btn.textContent = '⧉ copy'; }, 1400); };
+  try {
+    if (navigator.clipboard?.write && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html':  new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([markdown], { type: 'text/plain' }),
+      })]);
+    } else {
+      await navigator.clipboard.writeText(markdown);
+    }
+    done('✓ copied');
+  } catch {
+    done('copy failed');
+  }
+}
+
+function addCopyBtn(wrapper, getMarkdown, bodyEl) {
+  const b = document.createElement('button');
+  b.className = 'cross-send copy-btn';
+  b.textContent = '⧉ copy';
+  b.title = 'Copy this message';
+  b.onclick = () => copyMsg(b, getMarkdown(), bodyEl.innerHTML);
+  wrapper.appendChild(b);
+  return b;
+}
+
 function appendMsg(side, role, content, attachments) {
   const container = document.getElementById('msgs-' + side);
   const wrapper   = document.createElement('div');
@@ -1833,13 +1884,18 @@ function appendMsg(side, role, content, attachments) {
   body.innerHTML = renderMd(typeof content === 'string' ? content : '[multipart message]');
   wrapper.appendChild(body);
 
+  const acts = document.createElement('div');
+  acts.className = 'msg-actions';
+  wrapper.appendChild(acts);
+  addCopyBtn(acts, () => typeof content === 'string' ? content : body.textContent, body);
+
   if (role === 'assistant') {
     const xBtn = document.createElement('button');
     xBtn.className = 'cross-send';
     const target = side === 'left' ? 'right' : 'left';
     xBtn.textContent = `→ send to ${side === 'left' ? 'β' : 'α'}`;
     xBtn.onclick = () => crossSend(content, target);
-    wrapper.appendChild(xBtn);
+    acts.appendChild(xBtn);
   }
 
   container.appendChild(wrapper);
@@ -1917,11 +1973,43 @@ function recordUsage(model, u) {
   try { localStorage.setItem('beirt_spend', JSON.stringify(spend)); } catch {}
   renderSpend();
 }
+// Anthropic prices and bills in USD, so that stays the figure everything is
+// computed from. A display currency is a convenience on top of it, and the
+// rate is the user's to set — a stale rate quoted as fact would be worse than
+// no conversion at all.
+const CURRENCIES = { USD: '$', EUR: '€', GBP: '£' };
+let currency = { code: 'USD', rate: 1 };
+try { currency = Object.assign(currency, JSON.parse(localStorage.getItem('beirt_cur') || '{}')); } catch {}
+
+function setCurrency(code, rate) {
+  currency = { code, rate: code === 'USD' ? 1 : (parseFloat(rate) || currency.rate || 1) };
+  localStorage.setItem('beirt_cur', JSON.stringify(currency));
+  renderCurrencyUI();
+  renderSpend();
+}
+function renderCurrencyUI() {
+  const sel = document.getElementById('cur-code');
+  const rate = document.getElementById('cur-rate');
+  const row = document.getElementById('cur-rate-row');
+  if (!sel) return;
+  sel.value = currency.code;
+  rate.value = currency.rate;
+  row.style.display = currency.code === 'USD' ? 'none' : '';
+  const n = document.getElementById('cur-note');
+  if (n) n.textContent = currency.code === 'USD'
+    ? 'Anthropic prices in USD, so this matches the console.'
+    : `Converted from USD at a rate you set. Anthropic still bills in USD — your console is the source of truth, and the rate here does not update itself.`;
+}
+function money(usd) {
+  return (CURRENCIES[currency.code] || '$') + (usd * (currency.rate || 1)).toFixed(4);
+}
+
 function renderSpend() {
   const el = document.getElementById('spendBtn');
   if (!el) return;
-  el.textContent = '$' + spend.usd.toFixed(4);
-  el.title = `Session spend (estimate) · in ${spend.in.toLocaleString()} tok · out ${spend.out.toLocaleString()} tok · click to reset`;
+  el.textContent = money(spend.usd);
+  const conv = currency.code === 'USD' ? '' : ` · $${spend.usd.toFixed(4)} at ${currency.rate}`;
+  el.title = `Session spend (estimate)${conv} · in ${spend.in.toLocaleString()} tok · out ${spend.out.toLocaleString()} tok · click to reset`;
 }
 function resetSpend() {
   if (!confirm('Reset the session spend counter?')) return;
@@ -2241,12 +2329,17 @@ function finalizeAssistant(side, h, fullText, stopReason) {
       : '⚠ truncated — hit max tokens. On a thinking model the reasoning and tool calls come out of this same budget, so raise “max tok” rather than shortening the question';
     h.wrapper.appendChild(note);
   }
+  const acts = document.createElement('div');
+  acts.className = 'msg-actions';
+  h.wrapper.appendChild(acts);
+  addCopyBtn(acts, () => fullText, h.body);
+
   const xBtn = document.createElement('button');
   xBtn.className = 'cross-send';
   const target = side === 'left' ? 'right' : 'left';
   xBtn.textContent = `→ send to ${side === 'left' ? 'β' : 'α'}`;
   xBtn.onclick = () => crossSend(fullText, target);
-  h.wrapper.appendChild(xBtn);
+  acts.appendChild(xBtn);
   h.container.scrollTop = h.container.scrollHeight;
 }
 
