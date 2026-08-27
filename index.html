@@ -1263,7 +1263,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
     </select>
     <label class="maxtok" title="Max output tokens per reply">
       <span>max tok</span>
-      <input type="number" id="maxTokens" min="256" max="64000" step="256" value="4096">
+      <input type="number" id="maxTokens" min="256" max="64000" step="1024" value="32000">
     </label>
     <div class="fontctl" title="Text size (auto-scales with window; nudge here)">
       <button class="icon-btn" onclick="bumpFont(-1)" aria-label="Smaller text">A−</button>
@@ -1897,7 +1897,7 @@ function resetSpend() {
 // ── Max output tokens ─────────────────────────────────────────
 function maxTokens() {
   const v = parseInt(document.getElementById('maxTokens').value, 10);
-  if (!Number.isFinite(v) || v < 256) return 4096;
+  if (!Number.isFinite(v) || v < 256) return 32000;
   return Math.min(v, 64000);
 }
 
@@ -1908,11 +1908,11 @@ function buildTools(model) {
     const dyn = DYNAMIC_WEB.has(model);
     tools.push({
       type: dyn ? 'web_search_20260209' : 'web_search_20250305',
-      name: 'web_search', max_uses: 5,
+      name: 'web_search', max_uses: 15,
     });
     tools.push({
       type: dyn ? 'web_fetch_20260209' : 'web_fetch_20250910',
-      name: 'web_fetch', max_uses: 5,
+      name: 'web_fetch', max_uses: 10,
       citations: { enabled: true }, max_content_tokens: 50000,
     });
   }
@@ -2118,7 +2118,7 @@ function finalizeAssistant(side, h, fullText, stopReason) {
     note.className = 'trunc-note' + (stopReason === 'refusal' ? ' refusal' : '');
     note.textContent = stopReason === 'refusal'
       ? '⚠ refused — model declined for safety reasons; rephrase or try a different model'
-      : '⚠ truncated — hit max tokens; raise “max tok” and ask it to continue';
+      : '⚠ truncated — hit max tokens. On a thinking model the reasoning and tool calls come out of this same budget, so raise “max tok” rather than shortening the question';
     h.wrapper.appendChild(note);
   }
   const xBtn = document.createElement('button');
@@ -2332,6 +2332,14 @@ PERSIST_IDS.forEach(id => {
   el.addEventListener('input',  saveSettings);
   el.addEventListener('change', saveSettings);
 });
+
+// One-time lift of a stored 4096. A deliberately larger budget is left alone.
+(function liftMaxTokens() {
+  if (localStorage.getItem('beirt_mt')) return;
+  const el = document.getElementById('maxTokens');
+  if (parseInt(el.value, 10) <= 4096) { el.value = 32000; saveSettings(); }
+  localStorage.setItem('beirt_mt', '1');
+})();
 
 // ── Boot ──────────────────────────────────────────────────────
 renderSpend();
