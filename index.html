@@ -1973,6 +1973,7 @@ async function streamClaude(side, userText, attachments, hooks) {
   // over that is worse than losing the token-by-token render, so the retry
   // asks for one whole response instead.
   let useStream = streamingWorks;
+  const startedAt = Date.now();
 
   while (true) {
     const { tools, mcpServers } = buildTools(model);
@@ -2137,6 +2138,11 @@ async function streamClaude(side, userText, attachments, hooks) {
       // different things about who dropped the connection.
       readFailed.message = `${readFailed.name || 'Error'}: ${readFailed.message} (browser stream, cut short)`;
       readFailed.partial = answer;
+      readFailed.elapsed = Math.round((Date.now() - startedAt) / 1000);
+      // Anthropic generated these tokens whether or not they reached us, so
+      // count them; a spend figure that silently omits cut turns understates
+      // the bill exactly when it matters.
+      recordUsage(model, u);
       throw readFailed;
     }
 
@@ -2260,7 +2266,7 @@ async function runStream(side, userText, attachments) {
         h.body.innerHTML = renderMd(err.partial);
         const note = document.createElement('div');
         note.className = 'trunc-note';
-        note.textContent = '⚠ connection cut mid-answer — this much arrived and was billed. It is not in the conversation history; send again to continue.';
+        note.textContent = `⚠ connection cut mid-answer after ${err.elapsed ?? '?'}s — ${err.message}. This much arrived and was billed. It is not in the conversation history; send again to continue.`;
         h.wrapper.appendChild(note);
         return;
       }
