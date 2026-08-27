@@ -711,6 +711,30 @@ textarea.sys-prompt:focus { color: var(--text); }
   color: var(--text-faint);
   margin-left: auto;
 }
+/* Idle and working looked identical, so a long turn read as a hang. */
+.status.busy {
+  color: var(--text);
+  font-weight: 500;
+  animation: statusPulse 1.4s ease-in-out infinite;
+}
+.status.busy::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--left-accent);
+  margin-right: 6px;
+  vertical-align: middle;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes statusPulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status.busy, .status.busy::before, .thinking-dot { animation: none; }
+  .status.busy { opacity: 1; }
+}
 
 /* ── Attachment strip ──────────────────────────────────────── */
 #attach-strip {
@@ -1845,7 +1869,11 @@ function showError(side, msg, keyProblem) {
   container.scrollTop = container.scrollHeight;
 }
 
-function setStatus(msg) { document.getElementById('status').textContent = msg; }
+function setStatus(msg) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.classList.toggle('busy', msg !== 'Ready');
+}
 
 // ── Text size ─────────────────────────────────────────────────
 let fontScale = parseFloat(localStorage.getItem('beirt_fs')) || 1;
@@ -2100,8 +2128,12 @@ async function streamClaude(side, userText, attachments, hooks) {
         hooks.onTool('↻ stream dropped — retrying in one piece');
         continue;
       }
-      readFailed.message = readFailed.message + ' (browser stream)';
-      readFailed.retryable = true;
+      // Output already generated has already been billed. Re-sending the whole
+      // request would pay for the history again and throw that output away, so
+      // this is not retried — the text that did arrive is handed back instead
+      // and resending stays the user's call.
+      readFailed.message = readFailed.message + ' (browser stream, cut short)';
+      readFailed.partial = answer;
       throw readFailed;
     }
 
@@ -2217,6 +2249,18 @@ async function runStream(side, userText, attachments) {
       return;
     } catch (err) {
       histories[side].length = mark;
+      // A cut stream still produced billed text. Show it, flagged, rather than
+      // discard it — history stays rolled back, so the turn is display-only.
+      if (err.partial?.trim()) {
+        ensure();
+        hideThinking(side);
+        h.body.innerHTML = renderMd(err.partial);
+        const note = document.createElement('div');
+        note.className = 'trunc-note';
+        note.textContent = '⚠ connection cut mid-answer — this much arrived and was billed. It is not in the conversation history; send again to continue.';
+        h.wrapper.appendChild(note);
+        return;
+      }
       if (err.retryable && attempt < MAX_RETRIES) {
         // Keep the bubble so the pane does not flicker empty; say why it stalled.
         if (h) { h.tools.innerHTML = ''; h.body.innerHTML = ''; h.thinkBody.textContent = ''; h.think.style.display = 'none'; addToolChip(h, `\u21bb ${err.message} — retrying`); }
