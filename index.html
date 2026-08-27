@@ -1927,6 +1927,9 @@ function buildTools(model) {
 }
 
 // ── Claude API call (streaming SSE, straight from the browser) ─
+// Cleared for the session once a stream proves unreadable in this browser.
+let streamingWorks = true;
+
 async function streamClaude(side, userText, attachments, hooks) {
   const key = getKey();
   if (!key) { const e = new Error('No API key set.'); e.keyProblem = true; throw e; }
@@ -1937,6 +1940,11 @@ async function streamClaude(side, userText, attachments, hooks) {
   histories[side].push({ role: 'user', content: buildContent(userText, attachments) });
 
   let answer = '', thinking = '', stopReason = null, guard = 0, asstIdx = -1;
+  // Some browsers drop a long-lived chunked response part-way and reject the
+  // read with an error of their own, unrelated to the request. Losing the turn
+  // over that is worse than losing the token-by-token render, so the retry
+  // asks for one whole response instead.
+  let useStream = streamingWorks;
 
   while (true) {
     const { tools, mcpServers } = buildTools(model);
@@ -1945,7 +1953,7 @@ async function streamClaude(side, userText, attachments, hooks) {
       model,
       max_tokens: maxTokens(),
       messages: histories[side],
-      stream: true,
+      stream: useStream,
     };
     if (sys) payload.system = sys;
     if (THINKS_BY_DEFAULT.has(model)) payload.thinking = { type: 'adaptive', display: 'summarized' };
@@ -1971,6 +1979,25 @@ async function streamClaude(side, userText, attachments, hooks) {
       throw e;
     }
 
+    if (!useStream) {
+      const data = await res.json();
+      const round = (data.content || []).filter(b => b && !(b.type === 'text' && !b.text?.trim()));
+      for (const b of round) if (b.type === 'text') answer += b.text;
+      stopReason = data.stop_reason || null;
+      const mu = data.usage || {};
+      recordUsage(model, {
+        in: mu.input_tokens || 0, out: mu.output_tokens || 0,
+        cr: mu.cache_read_input_tokens || 0, cc: mu.cache_creation_input_tokens || 0,
+      });
+      if (round.length) {
+        if (asstIdx === -1) asstIdx = histories[side].push({ role: 'assistant', content: round }) - 1;
+        else histories[side][asstIdx].content.push(...round);
+      }
+      hooks.onText(answer);
+      if (stopReason === 'pause_turn' && guard++ < 5) continue;
+      return { text: answer, stopReason };
+    }
+
     const reader  = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -1979,6 +2006,8 @@ async function streamClaude(side, userText, attachments, hooks) {
     const u = { in: 0, out: 0, cr: 0, cc: 0 };
     stopReason = null;
 
+    let readFailed = null;
+    try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -2040,15 +2069,40 @@ async function streamClaude(side, userText, attachments, hooks) {
             if (evt.delta?.stop_reason) stopReason = evt.delta.stop_reason;
             if (evt.usage?.output_tokens != null) u.out = evt.usage.output_tokens;
           } else if (evt.type === 'error') {
+            // Reported by the API inside the stream; distinct from the read
+            // itself failing, which is the browser's doing.
             // Faults the API reports after the response has started — the
             // stream is dead, but the request itself was fine to send.
             const t = evt.error?.type;
             const e = new Error((evt.error?.message || 'stream error') + (t ? ` (${t})` : ''));
             e.retryable = t === 'overloaded_error' || t === 'api_error';
+            e.apiReported = true;
             throw e;
           }
         }
       }
+    }
+
+    } catch (e) {
+      if (e.apiReported) throw e;
+      readFailed = e;
+    }
+
+    // A read that died with nothing rendered is worth one attempt without
+    // streaming; a partial answer is kept rather than silently re-billed.
+    if (readFailed) {
+      if (useStream && !answer.trim()) {
+        // Remember it for the session: on a browser that cannot hold the
+        // stream at all, every later turn would otherwise open with a doomed
+        // request. In memory only — a reload gives streaming another go.
+        useStream = false;
+        streamingWorks = false;
+        hooks.onTool('↻ stream dropped — retrying in one piece');
+        continue;
+      }
+      readFailed.message = readFailed.message + ' (browser stream)';
+      readFailed.retryable = true;
+      throw readFailed;
     }
 
     recordUsage(model, u);
