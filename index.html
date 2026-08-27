@@ -1987,8 +1987,17 @@ async function streamClaude(side, userText, attachments, hooks) {
             if (b && (b.type === 'server_tool_use' || b.type === 'mcp_tool_use')) {
               try { b.input = JSON.parse(partial[evt.index] || '{}'); } catch {}
               if (b.type === 'mcp_tool_use') hooks.onTool(`🧠 ${b.server_name || 'mcp'}: ${b.name}`);
-              else if (b.name === 'web_search') hooks.onTool(`🔍 searched: ${b.input?.query ?? ''}`);
+              // Dynamic filtering drives search from inside code execution: the
+              // web_search block arrives with an empty input and the query sits
+              // in the Python that called it. Label the block that has it.
+              else if (b.name === 'web_search') {
+                if (b.input?.query) hooks.onTool(`🔍 searched: ${b.input.query}`);
+              }
               else if (b.name === 'web_fetch') hooks.onTool(`🌐 fetched: ${b.input?.url ?? ''}`);
+              else if (b.name === 'code_execution') {
+                const q = /web_search\(\s*\{\s*["']query["']\s*:\s*["']([^"']+)["']/.exec(b.input?.code || '');
+                hooks.onTool(q ? `🔍 searched: ${q[1]}` : '🛠 ran code');
+              }
               else hooks.onTool(`🛠 ${b.name}`);
             }
           } else if (evt.type === 'message_start') {
