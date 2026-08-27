@@ -1208,6 +1208,13 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <div class="note" style="margin-top:14px">
         Requests go from this page straight to <code>api.anthropic.com</code>. Nothing is proxied and nothing is logged.
       </div>
+
+      <div class="flabel" style="margin-top:22px">Streaming</div>
+      <div class="keep-btns">
+        <button class="keep-btn" id="stream-auto" onclick="setStreamMode('auto')">Auto</button>
+        <button class="keep-btn" id="stream-off"  onclick="setStreamMode('off')">Off</button>
+      </div>
+      <div class="note" id="stream-note"></div>
     </div>
 
     <div class="tabpane" id="tab-mcp">
@@ -1512,6 +1519,7 @@ function hideWelcome() {
 function openSettings(tab) {
   document.getElementById('set-key').value = getKey();
   renderKeepUI();
+  renderStreamUI();
   renderServers();
   document.getElementById('settings-backdrop').classList.add('show');
   showTab(tab || 'key');
@@ -1955,8 +1963,25 @@ function buildTools(model) {
 }
 
 // ── Claude API call (streaming SSE, straight from the browser) ─
-// Cleared for the session once a stream proves unreadable in this browser.
-let streamingWorks = true;
+// Cleared once a stream proves unreadable here. Remembered, because the
+// discovery costs a doubly-billed turn and a reload should not repeat it.
+let streamingWorks = localStorage.getItem('beirt_nostream') !== '1';
+
+function setStreamMode(mode) {
+  streamingWorks = mode === 'auto';
+  if (mode === 'off') localStorage.setItem('beirt_nostream', '1');
+  else localStorage.removeItem('beirt_nostream');
+  renderStreamUI();
+}
+function renderStreamUI() {
+  const off = !streamingWorks;
+  document.getElementById('stream-auto')?.classList.toggle('on', !off);
+  document.getElementById('stream-off')?.classList.toggle('on', off);
+  const n = document.getElementById('stream-note');
+  if (n) n.textContent = off
+    ? 'Whole replies only. Nothing renders until a reply is complete, but a connection that cannot hold a long stream stops costing you a turn.'
+    : 'Replies render as they arrive. If a stream is cut before anything shows, Beirt retries it whole and switches this to Off.';
+}
 
 async function streamClaude(side, userText, attachments, hooks) {
   const key = getKey();
@@ -2125,7 +2150,7 @@ async function streamClaude(side, userText, attachments, hooks) {
         // stream at all, every later turn would otherwise open with a doomed
         // request. In memory only — a reload gives streaming another go.
         useStream = false;
-        streamingWorks = false;
+        setStreamMode('off');
         hooks.onTool(`↻ ${readFailed.name || 'Error'}: ${readFailed.message} — retrying in one piece`);
         continue;
       }
