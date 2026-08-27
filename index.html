@@ -2125,14 +2125,17 @@ async function streamClaude(side, userText, attachments, hooks) {
         // request. In memory only — a reload gives streaming another go.
         useStream = false;
         streamingWorks = false;
-        hooks.onTool('↻ stream dropped — retrying in one piece');
+        hooks.onTool(`↻ ${readFailed.name || 'Error'}: ${readFailed.message} — retrying in one piece`);
         continue;
       }
       // Output already generated has already been billed. Re-sending the whole
       // request would pay for the history again and throw that output away, so
       // this is not retried — the text that did arrive is handed back instead
       // and resending stays the user's call.
-      readFailed.message = readFailed.message + ' (browser stream, cut short)';
+      // Carry the error's class through: TypeError, AbortError and a network
+      // failure all read as one vague string otherwise, and they mean
+      // different things about who dropped the connection.
+      readFailed.message = `${readFailed.name || 'Error'}: ${readFailed.message} (browser stream, cut short)`;
       readFailed.partial = answer;
       throw readFailed;
     }
