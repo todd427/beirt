@@ -1113,6 +1113,9 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
   padding: 3px 8px; cursor: pointer;
 }
 .srv-tok { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-faint); margin-top: 10px; }
+.srv-blocked, .srv-sent { font-family: 'IBM Plex Mono', monospace; font-size: 10px; margin-top: 6px; }
+.srv-blocked { color: var(--error); }
+.srv-sent { color: var(--left-ink); }
 
 .addform { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
 .addrow { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -1636,12 +1639,22 @@ function saveServers() {
 }
 
 function renderMcpCount() {
-  const on = servers.filter(s => s.on).length;
+  const on = servers.filter(s => !serverBlockedReason(s)).length;
   const el = document.getElementById('wel-mcp-count');
   if (el) el.textContent = servers.length ? servers.length + ' server' + (servers.length === 1 ? '' : 's') +
-    ' · ' + on + ' enabled' : 'none';
+    ' · ' + on + ' sent' : 'none';
   const hdr = document.getElementById('hdr-mcp-count');
   if (hdr) hdr.textContent = on ? ' · ' + on : '';
+}
+
+// Mirrors the filter in buildTools. A server that fails any of these is not
+// sent, and the model simply never sees the tool — which looks from the other
+// end like the server being down.
+function serverBlockedReason(s) {
+  if (!s.on) return 'off — not sent';
+  if (!s.token) return 'no token — not sent';
+  if (!s.tools.length) return 'no tools allowed — not sent';
+  return null;
 }
 
 function renderServers() {
@@ -1667,6 +1680,7 @@ function renderServers() {
       </div>
       <div class="srv-tok">token ${s.token ? '••••••••' + escHtml(s.token.slice(-4)) : '(none)'}
         · <button class="srv-rm" style="font-size:10px;border-bottom:1px solid currentColor" onclick="replaceToken(${i})">replace</button></div>
+      ${(r => r ? `<div class="srv-blocked">⚠ ${escHtml(r)}</div>` : '<div class="srv-sent">✓ sent with every request</div>')(serverBlockedReason(s))}
     </div>`).join('');
   renderMcpCount();
 }
