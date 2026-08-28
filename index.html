@@ -2198,7 +2198,12 @@ async function streamClaude(side, userText, attachments, hooks) {
     if (!useStream) {
       const data = await res.json();
       const round = (data.content || []).filter(b => b && !(b.type === 'text' && !b.text?.trim()));
-      for (const b of round) if (b.type === 'text') answer += b.text;
+      round.forEach((b, n) => {
+        if (b.type !== 'text') return;
+        const prev = round[n - 1];
+        if (answer && prev && prev.type !== 'text' && !/\n$/.test(answer)) answer += '\n\n';
+        answer += b.text;
+      });
       stopReason = data.stop_reason || null;
       const mu = data.usage || {};
       recordUsage(model, {
@@ -2246,6 +2251,16 @@ async function streamClaude(side, userText, attachments, hooks) {
 
           if (evt.type === 'content_block_start') {
             blocks[evt.index] = structuredClone(evt.content_block);
+            // Text resuming after a tool call or a thinking block picks up
+            // where the model left off, but the break between them is not in
+            // the deltas — joined straight on, a heading lands mid-sentence
+            // ("…vapor.## First") and stops being a heading at all.
+            // Consecutive text blocks are citation splits and must not gain a
+            // break, so only a change of block type earns one.
+            if (evt.content_block?.type === 'text' && answer && !/\n$/.test(answer)) {
+              const prev = blocks[evt.index - 1];
+              if (prev && prev.type !== 'text') { answer += '\n\n'; hooks.onText(answer); }
+            }
           } else if (evt.type === 'content_block_delta') {
             const b = blocks[evt.index];
             if (evt.delta?.type === 'text_delta') {
