@@ -1493,6 +1493,7 @@ function forgetKey() {
   localStorage.removeItem('beirt_key');
   document.getElementById('set-key').value = '';
   document.getElementById('wel-key').value = '';
+  forgetBudget();          // a féirín gauge outliving its key reads as a live cap
   renderKeyChip();
   closeSettings();
   showWelcome();
@@ -1505,6 +1506,39 @@ function setKeepMode(mode) {
   renderKeepUI();
   renderKeyChip();
 }
+// ── Féirín hand-off ───────────────────────────────────────────
+// A féirín (feirin.foxxelabs.ie) is a QR gift voucher that hands the key over
+// in the URL fragment: #key=sk-ant-…&budget=5&budget_usd=5.40. A fragment is
+// never sent to a server, so the key is not in Féirín's logs, not in this
+// page's, and not in any proxy between — which is the whole reason it arrives
+// this way rather than in a query string. Read it once, keep it under
+// whatever session/remember choice is already set, then wipe the address bar.
+let budget = null;
+try { budget = JSON.parse(localStorage.getItem('beirt_budget') || 'null'); } catch {}
+
+(function claimFeirin() {
+  if (!location.hash || location.hash.indexOf('key=') < 0) return;
+  const p = new URLSearchParams(location.hash.slice(1));
+  const k = (p.get('key') || '').trim();
+  if (!k.startsWith('sk-ant-')) return;
+  storeKey(k);
+
+  // Gauge in USD because that is what spend.usd counts and what Anthropic
+  // bills; the euro figure is only the label off the printed card.
+  const usd = parseFloat(p.get('budget_usd'));
+  const eur = parseFloat(p.get('budget'));
+  budget = usd > 0 ? { usd, eur: eur > 0 ? eur : null } : null;
+  if (budget) localStorage.setItem('beirt_budget', JSON.stringify(budget));
+
+  history.replaceState(null, '', location.pathname + location.search);
+})();
+
+function forgetBudget() {
+  budget = null;
+  localStorage.removeItem('beirt_budget');
+  renderSpend();
+}
+
 function renderKeepUI() {
   const remembering = keepMode === 'remember';
   const note = remembering
@@ -2133,9 +2167,24 @@ function money(usd) {
 function renderSpend() {
   const el = document.getElementById('spendBtn');
   if (!el) return;
-  el.textContent = money(spend.usd);
   const conv = currency.code === 'USD' ? '' : ` · $${spend.usd.toFixed(4)} at ${currency.rate}`;
   const srch = spend.searches ? ` · ${spend.searches} search${spend.searches === 1 ? '' : 'es'}` : '';
+
+  if (budget) {
+    // A gauge against a cap is read at a glance, so two decimals — the fourth
+    // is noise here even though it is the right precision for a bare counter.
+    const sym  = CURRENCIES[currency.code] || '$';
+    const rate = currency.rate || 1;
+    const frac = budget.usd > 0 ? spend.usd / budget.usd : 0;
+    el.textContent = `${sym}${(spend.usd * rate).toFixed(2)} / ${sym}${(budget.usd * rate).toFixed(2)}`;
+    el.style.color = frac >= 1 ? 'var(--error)' : frac >= 0.8 ? 'var(--warn)' : '';
+    const cap = budget.eur ? `€${budget.eur} féirín` : 'demo budget';
+    el.title = `${Math.round(frac * 100)}% of a ${cap} (estimate — Anthropic enforces the real cap)${conv} · in ${spend.in.toLocaleString()} tok · out ${spend.out.toLocaleString()} tok${srch} · click to reset`;
+    return;
+  }
+
+  el.textContent = money(spend.usd);
+  el.style.color = '';
   el.title = `Session spend (estimate)${conv} · in ${spend.in.toLocaleString()} tok · out ${spend.out.toLocaleString()} tok${srch} · click to reset`;
 }
 function resetSpend() {
@@ -2275,6 +2324,17 @@ async function streamClaude(side, userText, attachments, hooks) {
       const e = new Error((err?.error?.message || 'request failed') + ` (${t || 'HTTP ' + res.status})`);
       if (res.status === 401 || res.status === 403) e.keyProblem = true;
       if (res.status === 429 || res.status >= 500) e.retryable = true;
+      // A féirín's workspace carries a hard monthly spend limit. Hitting it is
+      // not a bad key and not a flaky network — it is the demo running out,
+      // and "invalid_request_error" helps nobody standing in front of a room.
+      // Matched on the message rather than the status, because that is what
+      // actually carries the distinction.
+      if (/spend limit|credit balance|billing/i.test(err?.error?.message || '')) {
+        e.keyProblem = false;
+        e.retryable = false;
+        e.budgetExhausted = true;
+        if (budget) e.message = 'demo budget exhausted — ask Todd for more.';
+      }
       throw e;
     }
 
