@@ -2275,6 +2275,22 @@ async function streamClaude(side, userText, attachments, hooks) {
               hooks.onThink(thinking);
             } else if (evt.delta?.type === 'signature_delta') {
               if (b) b.signature = (b.signature || '') + evt.delta.signature;
+            } else if (evt.delta?.type === 'citations_delta') {
+              // Singular on the delta, plural on the block — the one delta
+              // whose field name does not match its destination.
+              if (b && evt.delta.citation) (b.citations = b.citations || []).push(evt.delta.citation);
+            } else if (b && evt.delta) {
+              // Everything else the API streams, accumulated by shape rather
+              // than by name. Three bugs came from this parser knowing only a
+              // subset of block types and silently dropping the rest — a
+              // half-built block replayed to the API is what breaks the next
+              // turn, so an unrecognised delta is kept rather than discarded.
+              for (const [k, v] of Object.entries(evt.delta)) {
+                if (k === 'type') continue;
+                if (typeof v === 'string') b[k] = (b[k] || '') + v;
+                else if (Array.isArray(v)) b[k] = (b[k] || []).concat(v);
+                else b[k] = v;
+              }
             }
           } else if (evt.type === 'content_block_stop') {
             const b = blocks[evt.index];
