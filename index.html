@@ -577,6 +577,16 @@ textarea.sys-prompt:focus { color: var(--text); }
 }
 
 /* ── Cross-send ────────────────────────────────────────────── */
+.out-files { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; align-self: flex-start; max-width: 92%; }
+.out-file { display: flex; flex-direction: column; gap: 5px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-faint); }
+.out-img {
+  max-width: 100%; height: auto; display: block;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface);
+}
+.out-link { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim); text-decoration: none; }
+.out-link:hover { color: var(--text); text-decoration: underline; }
+
 .msg-actions { display: flex; gap: 6px; align-items: center; }
 .msg.user .msg-actions { align-self: flex-end; }
 .copy-btn { min-width: 62px; }
@@ -1305,6 +1315,10 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <input type="checkbox" id="webToggle">
       <span>🌐 Web</span>
     </label>
+    <label class="web-toggle" title="Let both panes run code server-side — charts, files, calculation. Implicit when Web is on for models with dynamic search.">
+      <input type="checkbox" id="codeToggle">
+      <span>⌗ Code</span>
+    </label>
     <select class="preset-sel" id="presetSel" onchange="applyPreset(this.value)" title="Load a system-prompt preset into both panes">
       <option value="">Presets…</option>
       <option value="archreview">Sceptic ⚔ Builder</option>
@@ -1402,6 +1416,8 @@ const API_URL     = 'https://api.anthropic.com/v1/messages';
 const MODELS_URL  = 'https://api.anthropic.com/v1/models';
 const API_VERSION = '2023-06-01';
 const MCP_BETA    = 'mcp-client-2025-11-20';
+const FILES_URL   = 'https://api.anthropic.com/v1/files';
+const FILES_BETA  = 'files-api-2025-04-14';
 const MAX_RETRIES = 2;  // transient stream faults only; each retry re-bills input
 // Models taking the dynamic-filtering server tools. Everything else keeps the
 // basic variants — the pair is per-model, not per-account.
@@ -1849,12 +1865,19 @@ async function copyMsg(btn, markdown, html) {
   }
 }
 
-function addCopyBtn(wrapper, getMarkdown, bodyEl) {
+function addCopyBtn(wrapper, getMarkdown, bodyEl, filesEl) {
   const b = document.createElement('button');
   b.className = 'cross-send copy-btn';
   b.textContent = '⧉ copy';
   b.title = 'Copy this message';
-  b.onclick = () => copyMsg(b, getMarkdown(), bodyEl.innerHTML);
+  // Any produced image rides along in the HTML — it is a data URL, so it
+  // survives into whatever the paste lands in.
+  b.onclick = () => {
+    const imgs = filesEl && filesEl.style.display !== 'none'
+      ? [...filesEl.querySelectorAll('img')].map(i => i.outerHTML).join('')
+      : '';
+    copyMsg(b, getMarkdown(), bodyEl.innerHTML + imgs);
+  };
   wrapper.appendChild(b);
   return b;
 }
@@ -2040,6 +2063,14 @@ function buildTools(model) {
       citations: { enabled: true }, max_content_tokens: 50000,
     });
   }
+  // Dynamic filtering already runs code execution under the hood; declaring a
+  // second environment alongside it confuses the model, so this only fills the
+  // gap when that is not in play.
+  const dynWeb = document.getElementById('webToggle')?.checked && DYNAMIC_WEB.has(model);
+  if (document.getElementById('codeToggle')?.checked && !dynWeb) {
+    tools.push({ type: 'code_execution_20260521', name: 'code_execution' });
+  }
+
   const mcpServers = [];
   servers.filter(s => s.on && s.token && s.tools.length).forEach(s => {
     mcpServers.push({ type: 'url', url: s.url, name: s.name, authorization_token: s.token });
@@ -2087,6 +2118,7 @@ async function streamClaude(side, userText, attachments, hooks) {
   // asks for one whole response instead.
   let useStream = streamingWorks;
   const startedAt = Date.now();
+  const seenFiles = new Set();
 
   while (true) {
     const { tools, mcpServers } = buildTools(model);
@@ -2136,6 +2168,9 @@ async function streamClaude(side, userText, attachments, hooks) {
         else histories[side][asstIdx].content.push(...round);
       }
       hooks.onText(answer);
+      const ids = round.flatMap(fileIdsIn).filter(id => !seenFiles.has(id));
+      ids.forEach(id => seenFiles.add(id));
+      if (ids.length) hooks.onFiles(ids);
       if (stopReason === 'pause_turn' && guard++ < 5) continue;
       return { text: answer, stopReason };
     }
@@ -2186,6 +2221,11 @@ async function streamClaude(side, userText, attachments, hooks) {
             }
           } else if (evt.type === 'content_block_stop') {
             const b = blocks[evt.index];
+            if (b && /tool_result$/.test(b.type || '')) {
+              const ids = fileIdsIn(b).filter(id => !seenFiles.has(id));
+              ids.forEach(id => seenFiles.add(id));
+              if (ids.length) hooks.onFiles(ids);
+            }
             if (b && (b.type === 'server_tool_use' || b.type === 'mcp_tool_use')) {
               try { b.input = JSON.parse(partial[evt.index] || '{}'); } catch {}
               if (b.type === 'mcp_tool_use') hooks.onTool(`🧠 ${b.server_name || 'mcp'}: ${b.name}`);
@@ -2281,6 +2321,84 @@ async function streamClaude(side, userText, attachments, hooks) {
   }
 }
 
+// ── Files written by code execution ───────────────────────────
+// A chart or document the model builds lands in the execution container, and
+// the response only carries its id. The shape of the referring block differs
+// between the bash and legacy code-execution results, so rather than match a
+// path, walk the block for anything holding a file_id.
+function fileIdsIn(block) {
+  const found = [];
+  const walk = o => {
+    if (!o || typeof o !== 'object') return;
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (typeof o.file_id === 'string') found.push(o.file_id);
+    Object.values(o).forEach(walk);
+  };
+  walk(block);
+  return found;
+}
+
+function fileHeaders() {
+  return {
+    'x-api-key': getKey(),
+    'anthropic-version': API_VERSION,
+    'anthropic-beta': FILES_BETA,
+    'anthropic-dangerous-direct-browser-access': 'true',
+  };
+}
+
+async function fetchFile(fileId) {
+  const h = fileHeaders();
+  const meta = await fetch(`${FILES_URL}/${fileId}`, { headers: h })
+    .then(r => (r.ok ? r.json() : null)).catch(() => null);
+  const res = await fetch(`${FILES_URL}/${fileId}/content`, { headers: h });
+  if (!res.ok) {
+    const e = new Error(`could not fetch file (HTTP ${res.status})`);
+    if (res.status === 401 || res.status === 403) e.keyProblem = true;
+    throw e;
+  }
+  return { meta, blob: await res.blob() };
+}
+
+const toDataUrl = blob => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(r.result);
+  r.onerror = rej;
+  r.readAsDataURL(blob);
+});
+
+// Images become data URLs rather than blob URLs so that copying the message
+// carries the picture into the paste target; a blob URL would only resolve
+// back in this tab.
+async function renderFile(strip, fileId) {
+  const holder = document.createElement('div');
+  holder.className = 'out-file';
+  holder.textContent = 'fetching file…';
+  strip.appendChild(holder);
+  strip.style.display = '';
+  try {
+    const { meta, blob } = await fetchFile(fileId);
+    const name = meta?.filename || fileId;
+    const type = blob.type || meta?.mime_type || '';
+    holder.textContent = '';
+    if (type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.className = 'out-img';
+      img.alt = name;
+      img.src = await toDataUrl(blob);
+      holder.appendChild(img);
+    }
+    const a = document.createElement('a');
+    a.className = 'out-link';
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.textContent = `⬇ ${name}` + (blob.size ? ` · ${Math.max(1, Math.round(blob.size / 1024))} KB` : '');
+    holder.appendChild(a);
+  } catch (err) {
+    holder.textContent = `⚠ ${err.message}`;
+  }
+}
+
 // ── Live assistant bubble (streaming target) ──────────────────
 function startAssistantMsg(side) {
   const container = document.getElementById('msgs-' + side);
@@ -2307,8 +2425,12 @@ function startAssistantMsg(side) {
   const body = document.createElement('div');
   body.className = 'msg-body';
   wrapper.appendChild(body);
+  const files = document.createElement('div');
+  files.className = 'out-files';
+  files.style.display = 'none';
+  wrapper.appendChild(files);
   container.appendChild(wrapper);
-  return { container, wrapper, think, thinkBody, tools, body };
+  return { container, wrapper, think, thinkBody, tools, body, files };
 }
 
 function addToolChip(h, label) {
@@ -2332,7 +2454,7 @@ function finalizeAssistant(side, h, fullText, stopReason) {
   const acts = document.createElement('div');
   acts.className = 'msg-actions';
   h.wrapper.appendChild(acts);
-  addCopyBtn(acts, () => fullText, h.body);
+  addCopyBtn(acts, () => fullText, h.body, h.files);
 
   const xBtn = document.createElement('button');
   xBtn.className = 'cross-send';
@@ -2370,6 +2492,11 @@ async function runStream(side, userText, attachments) {
           h.container.scrollTop = h.container.scrollHeight;
         },
         onTool: label => { ensure(); addToolChip(h, label); },
+        onFiles: ids => {
+          ensure();
+          ids.forEach(id => renderFile(h.files, id));
+          h.container.scrollTop = h.container.scrollHeight;
+        },
       });
       ensure();
       finalizeAssistant(side, h, text, stopReason);
@@ -2522,6 +2649,10 @@ inputArea.addEventListener('drop', e => {
 const webToggle = document.getElementById('webToggle');
 webToggle.checked = (localStorage.getItem('beirt_web') ?? '1') === '1';
 webToggle.addEventListener('change', () => localStorage.setItem('beirt_web', webToggle.checked ? '1' : '0'));
+
+const codeToggle = document.getElementById('codeToggle');
+codeToggle.checked = localStorage.getItem('beirt_code') === '1';
+codeToggle.addEventListener('change', () => localStorage.setItem('beirt_code', codeToggle.checked ? '1' : '0'));
 
 // ── Presets ───────────────────────────────────────────────────
 const PRESETS = {

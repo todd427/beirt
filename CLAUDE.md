@@ -68,7 +68,7 @@ that changes the typeface as well as the colours.
 All persisted keys are prefixed `beirt_`. If you add one, follow the prefix:
 `beirt_key`, `beirt_keep`, `beirt_theme`, `beirt_fs`, `beirt_spend`,
 `beirt_web`, `beirt_settings`, `beirt_mcp`, `beirt_mcp_tokens`, `beirt_mt`,
-`beirt_nostream`, `beirt_cur`.
+`beirt_nostream`, `beirt_cur`, `beirt_code`.
 
 ## Style
 

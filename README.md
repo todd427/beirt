@@ -26,7 +26,8 @@ local clone. They are the same file, and neither one has anything behind it.
 - **Configurable max tokens** — set the per-reply output budget; truncated replies are flagged
 - **File attachments** — images (vision), PDFs, text/code files; drag and drop works
 - **Spend tracking** — a running session cost estimate + token totals, computed per-model from the API's `usage`. Anthropic prices in USD; Settings can show the figure in EUR or GBP at a rate you set, with the USD amount kept in the tooltip
-- **Copy** — every question and answer has a copy button, writing rendered HTML for documents and the original Markdown for editors
+- **Copy** — every question and answer has a copy button, writing rendered HTML for documents and the original Markdown for editors. Generated images travel with the HTML
+- **Code execution** — an optional `⌗ Code` toggle lets both panes run code server-side. Charts and files it produces are fetched back through the Files API and shown inline, with a download link. Implicit when `🌐 Web` is on for models with dynamic search, so the toggle is only needed with web off
 - **Export MD** — downloads both conversation threads as a timestamped Markdown file
 - **Readable type** — message/code/compose text auto-scales with window width, plus an `A− / A+` nudge (persists)
 - **Five themes + Auto** — Paper and Folio (the house pair), Slate and Ink (neutral), Terminal (monochrome green, from [rialú](https://rialu.ie)). Auto follows your OS light/dark setting
