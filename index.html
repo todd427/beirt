@@ -1355,6 +1355,10 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <span>max tok</span>
       <input type="number" id="maxTokens" min="256" max="64000" step="1024" value="32000">
     </label>
+    <label class="maxtok" id="searchCtl" title="Web searches allowed per reply. Each one is billed at $0.01 on top of tokens, and both panes search independently.">
+      <span>searches</span>
+      <input type="number" id="maxSearch" min="1" max="30" step="1" value="8">
+    </label>
     <div class="fontctl" title="Text size (auto-scales with window; nudge here)">
       <button class="icon-btn" onclick="bumpFont(-1)" aria-label="Smaller text">A−</button>
       <button class="icon-btn" onclick="bumpFont(1)"  aria-label="Larger text">A+</button>
@@ -2107,6 +2111,12 @@ function resetSpend() {
 }
 
 // ── Max output tokens ─────────────────────────────────────────
+function maxSearches() {
+  const v = parseInt(document.getElementById('maxSearch').value, 10);
+  if (!Number.isFinite(v) || v < 1) return 8;
+  return Math.min(v, 30);
+}
+
 function maxTokens() {
   const v = parseInt(document.getElementById('maxTokens').value, 10);
   if (!Number.isFinite(v) || v < 256) return 32000;
@@ -2120,7 +2130,7 @@ function buildTools(model) {
     const dyn = DYNAMIC_WEB.has(model);
     tools.push({
       type: dyn ? 'web_search_20260209' : 'web_search_20250305',
-      name: 'web_search', max_uses: 15,
+      name: 'web_search', max_uses: maxSearches(),
     });
     tools.push({
       type: dyn ? 'web_fetch_20260209' : 'web_fetch_20250910',
@@ -2775,7 +2785,15 @@ inputArea.addEventListener('drop', e => {
 // ── Web access toggle (persisted; default on) ─────────────────
 const webToggle = document.getElementById('webToggle');
 webToggle.checked = (localStorage.getItem('beirt_web') ?? '1') === '1';
-webToggle.addEventListener('change', () => localStorage.setItem('beirt_web', webToggle.checked ? '1' : '0'));
+function syncSearchCtl() {
+  document.getElementById('searchCtl').style.opacity = webToggle.checked ? '' : '0.4';
+  document.getElementById('maxSearch').disabled = !webToggle.checked;
+}
+webToggle.addEventListener('change', () => {
+  localStorage.setItem('beirt_web', webToggle.checked ? '1' : '0');
+  syncSearchCtl();
+});
+syncSearchCtl();
 
 const codeToggle = document.getElementById('codeToggle');
 codeToggle.checked = localStorage.getItem('beirt_code') === '1';
@@ -2809,7 +2827,7 @@ function applyPreset(name) {
 }
 
 // ── Persist panel settings ────────────────────────────────────
-const PERSIST_IDS = ['sys-left','sys-right','model-left','model-right','maxTokens'];
+const PERSIST_IDS = ['sys-left','sys-right','model-left','model-right','maxTokens','maxSearch'];
 function saveSettings() {
   const data = {};
   PERSIST_IDS.forEach(id => { data[id] = document.getElementById(id).value; });

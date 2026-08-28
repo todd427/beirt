@@ -24,6 +24,7 @@ local clone. They are the same file, and neither one has anything behind it.
 - **Cross-send** — send any response from one pane to the other as a new user message
 - **Presets** — one-click system-prompt pairs (Sceptic ⚔ Builder, Red ⚔ Blue team, Line ⚔ Dev editor)
 - **Configurable max tokens** — set the per-reply output budget; truncated replies are flagged
+- **Search budget** — a `searches` control caps web searches per reply. Each search is billed at $0.01 on top of tokens and both panes search independently, so this is the dial that moves the bill most on research turns
 - **File attachments** — images (vision), PDFs, text/code files; drag and drop works
 - **Spend tracking** — a running session cost estimate + token totals, computed per-model from the API's `usage`, including the per-request charge for server-side web searches ($10 per 1,000). Anthropic prices in USD; Settings can show the figure in EUR or GBP at a rate you set, with the USD amount kept in the tooltip
 - **Copy** — every question and answer has a copy button, writing rendered HTML for documents and the original Markdown for editors. Generated images travel with the HTML
