@@ -655,6 +655,17 @@ textarea.sys-prompt:focus { color: var(--text); }
 .msg-body h1 { font-size: calc(var(--msg) * 1.3); }
 .msg-body h2 { font-size: calc(var(--msg) * 1.12); }
 .msg-body h3 { font-size: calc(var(--msg) * 1.0); font-style: italic; }
+.msg-body .tbl { overflow-x: auto; margin: 9px 0; }
+.msg-body table { border-collapse: collapse; font-size: 0.94em; }
+.msg-body th, .msg-body td {
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.msg-body th { background: var(--surface2); font-weight: 600; white-space: nowrap; }
+.msg-body tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface2) 45%, transparent); }
+
 .msg-body ul, .msg-body ol { padding-left: 18px; margin: 6px 0; }
 .msg-body li { margin: 3px 0; }
 .msg-body strong { font-weight: 600; }
@@ -1830,14 +1841,45 @@ function renderMd(text) {
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
     .replace(/^---+$/gm, '<hr>')
     .replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>');
+  text = renderTables(text);
   text = text.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
   text = text.split(/\n\n+/).map(p => {
     p = p.trim();
-    if (!p || p.startsWith('<h') || p.startsWith('<ul') || p.startsWith('<hr') || p.startsWith('\x00')) return p;
+    if (!p || p.startsWith('<h') || p.startsWith('<ul') || p.startsWith('<hr')
+        || p.startsWith('<div class="tbl"') || p.startsWith('\x00')) return p;
     return `<p>${p.replace(/\n/g, '<br>')}</p>`;
   }).join('\n');
   blocks.forEach((b, i) => { text = text.replace(`\x00BLOCK${i}\x00`, b); });
   return text;
+}
+
+// GitHub-style tables. Line-based rather than one large regex: a table is only
+// a table if a header row is followed by a dash separator, and reading it a
+// line at a time keeps that check honest instead of guessing from pipes alone.
+function renderTables(text) {
+  const isRow = l => /^\s*\|.*\|\s*$/.test(l);
+  const isSep = l => /^\s*\|(?:\s*:?-+:?\s*\|)+\s*$/.test(l);
+  const cells = l => l.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+
+  const lines = text.split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!(isRow(lines[i]) && isSep(lines[i + 1] || ''))) { out.push(lines[i]); continue; }
+
+    const head = cells(lines[i]);
+    const align = cells(lines[i + 1]).map(c =>
+      c.startsWith(':') && c.endsWith(':') ? 'center' : c.endsWith(':') ? 'right' : '');
+    i += 2;
+    const body = [];
+    while (i < lines.length && isRow(lines[i])) body.push(cells(lines[i++]));
+    i--;
+
+    const at = n => (align[n] ? ` style="text-align:${align[n]}"` : '');
+    const th = head.map((h, n) => `<th${at(n)}>${h}</th>`).join('');
+    const tr = body.map(r => `<tr>${head.map((_, n) => `<td${at(n)}>${r[n] ?? ''}</td>`).join('')}</tr>`).join('');
+    out.push(`<div class="tbl"><table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`);
+  }
+  return out.join('\n');
 }
 
 function escHtml(s) {
