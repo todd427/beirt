@@ -1086,7 +1086,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .srv-tog {
-  margin-left: auto; flex-shrink: 0;
+  margin-left: auto; flex-shrink: 0; min-width: 62px;
   background: transparent; border: 2px solid var(--border); border-radius: 5px;
   color: var(--text-dim); cursor: pointer;
   font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.05em;
@@ -1673,7 +1673,7 @@ function renderServers() {
         <span class="srv-dot"></span>
         <span class="srv-name">${escHtml(s.name)}</span>
         <span class="srv-url">${escHtml(s.url)}</span>
-        <button class="srv-tog ${s.on ? 'on' : ''}" onclick="toggleServer(${i})">${s.on ? 'ON' : 'OFF'}</button>
+        <button class="srv-tog ${s.on ? 'on' : ''}" onclick="toggleServer(${i})">${s.on ? 'disable' : 'enable'}</button>
         <button class="srv-rm" onclick="removeServer(${i})" title="Remove">✕</button>
       </div>
       <div class="srv-tools">
