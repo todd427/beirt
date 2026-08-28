@@ -2257,7 +2257,17 @@ async function streamClaude(side, userText, attachments, hooks) {
     };
     if (mcpServers.length) headers['anthropic-beta'] = MCP_BETA;
 
-    const res = await fetch(API_URL, { method: 'POST', headers, body: JSON.stringify(payload) });
+    let res;
+    try {
+      res = await fetch(API_URL, { method: 'POST', headers, body: JSON.stringify(payload) });
+    } catch (e) {
+      // Never reached the API: no response, so nothing was generated and
+      // nothing billed. Reconnecting is free, and on a flaky path it is what
+      // you would do by hand anyway — so do it rather than surfacing it.
+      const err = new Error(`${e.name || 'Error'}: ${e.message} (never connected)`);
+      err.retryable = true;
+      throw err;
+    }
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -2491,6 +2501,19 @@ function fileIdsIn(block) {
   return found;
 }
 
+// A connection that never opened carries no cost and no state, so it is worth
+// simply trying again rather than reporting it.
+async function retryFetch(url, opts, tries = MAX_RETRIES) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetch(url, opts);
+    } catch (e) {
+      if (attempt >= tries) throw e;
+      await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+    }
+  }
+}
+
 function fileHeaders() {
   return {
     'x-api-key': getKey(),
@@ -2504,7 +2527,7 @@ async function fetchFile(fileId) {
   const h = fileHeaders();
   const meta = await fetch(`${FILES_URL}/${fileId}`, { headers: h })
     .then(r => (r.ok ? r.json() : null)).catch(() => null);
-  const res = await fetch(`${FILES_URL}/${fileId}/content`, { headers: h });
+  const res = await retryFetch(`${FILES_URL}/${fileId}/content`, { headers: h });
   if (!res.ok) {
     const e = new Error(`could not fetch file (HTTP ${res.status})`);
     if (res.status === 401 || res.status === 403) e.keyProblem = true;
