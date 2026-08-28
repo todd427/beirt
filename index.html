@@ -1707,8 +1707,16 @@ function toggleServer(i) {
   saveServers();
 }
 function addTool(i) {
-  const t = prompt('Tool name to allow (exactly as the server exposes it):');
-  if (t && t.trim()) { servers[i].tools.push(t.trim()); saveServers(); }
+  // A server's useful allow-list is most of its toolset, and one prompt per
+  // name made naming six of them a chore worth avoiding — which left the list
+  // empty, which is the state that silently stops the server being sent.
+  const t = prompt('Tool names to allow, separated by commas — exactly as the server exposes them:');
+  if (!t) return;
+  const seen = new Set(servers[i].tools);
+  t.split(/[,\n]/).map(x => x.trim()).filter(Boolean).forEach(n => {
+    if (!seen.has(n)) { seen.add(n); servers[i].tools.push(n); }
+  });
+  saveServers();
 }
 function removeTool(i, j) { servers[i].tools.splice(j, 1); if (!servers[i].tools.length) servers[i].on = false; saveServers(); }
 function replaceToken(i) {
