@@ -577,6 +577,20 @@ textarea.sys-prompt:focus { color: var(--text); }
 }
 
 /* ── Cross-send ────────────────────────────────────────────── */
+.sources { display: flex; flex-direction: column; gap: 3px; margin-top: 9px; align-self: flex-start; max-width: 92%; }
+.src-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 2px;
+}
+.src {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; line-height: 1.5;
+  color: var(--text-dim); text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.src:hover { color: var(--text); text-decoration: underline; }
+
 .out-files { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; align-self: flex-start; max-width: 92%; }
 .out-file { display: flex; flex-direction: column; gap: 5px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-faint); }
 .out-img {
@@ -2030,11 +2044,19 @@ const PRICING = {
 let spend = { usd: 0, in: 0, out: 0 };
 try { spend = Object.assign(spend, JSON.parse(localStorage.getItem('beirt_spend') || '{}')); } catch {}
 
+// Server-side search is billed per request on top of tokens — $10 per 1,000.
+// A research turn can fire a dozen, so a token-only estimate understates the
+// bill exactly where the spending is. Errored searches are not billed, and the
+// API leaves those out of the count.
+const SEARCH_USD = 0.01;
+
 function recordUsage(model, u) {
   const p = PRICING[model] || { in: 5, out: 25 };
   spend.usd += (u.in * p.in + u.cr * p.in * 0.1 + u.cc * p.in * 1.25 + u.out * p.out) / 1e6;
+  spend.usd += (u.searches || 0) * SEARCH_USD;
   spend.in  += u.in + u.cr + u.cc;
   spend.out += u.out;
+  spend.searches = (spend.searches || 0) + (u.searches || 0);
   try { localStorage.setItem('beirt_spend', JSON.stringify(spend)); } catch {}
   renderSpend();
 }
@@ -2074,11 +2096,12 @@ function renderSpend() {
   if (!el) return;
   el.textContent = money(spend.usd);
   const conv = currency.code === 'USD' ? '' : ` · $${spend.usd.toFixed(4)} at ${currency.rate}`;
-  el.title = `Session spend (estimate)${conv} · in ${spend.in.toLocaleString()} tok · out ${spend.out.toLocaleString()} tok · click to reset`;
+  const srch = spend.searches ? ` · ${spend.searches} search${spend.searches === 1 ? '' : 'es'}` : '';
+  el.title = `Session spend (estimate)${conv} · in ${spend.in.toLocaleString()} tok · out ${spend.out.toLocaleString()} tok${srch} · click to reset`;
 }
 function resetSpend() {
   if (!confirm('Reset the session spend counter?')) return;
-  spend = { usd: 0, in: 0, out: 0 };
+  spend = { usd: 0, in: 0, out: 0, searches: 0 };
   localStorage.setItem('beirt_spend', JSON.stringify(spend));
   renderSpend();
 }
@@ -2209,12 +2232,14 @@ async function streamClaude(side, userText, attachments, hooks) {
       recordUsage(model, {
         in: mu.input_tokens || 0, out: mu.output_tokens || 0,
         cr: mu.cache_read_input_tokens || 0, cc: mu.cache_creation_input_tokens || 0,
+        searches: mu.server_tool_use?.web_search_requests || 0,
       });
       if (round.length) {
         if (asstIdx === -1) asstIdx = histories[side].push({ role: 'assistant', content: round }) - 1;
         else histories[side][asstIdx].content.push(...round);
       }
       hooks.onText(answer);
+      round.forEach(b => { if (b.type === 'text' && b.citations?.length) hooks.onCite(b.citations); });
       const ids = round.flatMap(fileIdsIn).filter(id => !seenFiles.has(id));
       ids.forEach(id => seenFiles.add(id));
       if (ids.length) hooks.onFiles(ids);
@@ -2227,7 +2252,7 @@ async function streamClaude(side, userText, attachments, hooks) {
     let buffer = '';
     const blocks = [];
     const partial = {};
-    const u = { in: 0, out: 0, cr: 0, cc: 0 };
+    const u = { in: 0, out: 0, cr: 0, cc: 0, searches: 0 };
     stopReason = null;
 
     let readFailed = null;
@@ -2294,6 +2319,7 @@ async function streamClaude(side, userText, attachments, hooks) {
             }
           } else if (evt.type === 'content_block_stop') {
             const b = blocks[evt.index];
+            if (b?.type === 'text' && b.citations?.length) hooks.onCite(b.citations);
             if (b && /tool_result$/.test(b.type || '')) {
               const ids = fileIdsIn(b).filter(id => !seenFiles.has(id));
               ids.forEach(id => seenFiles.add(id));
@@ -2323,6 +2349,10 @@ async function streamClaude(side, userText, attachments, hooks) {
           } else if (evt.type === 'message_delta') {
             if (evt.delta?.stop_reason) stopReason = evt.delta.stop_reason;
             if (evt.usage?.output_tokens != null) u.out = evt.usage.output_tokens;
+            if (evt.usage?.server_tool_use) {
+              const st = evt.usage.server_tool_use;
+              u.searches = st.web_search_requests || 0;
+            }
           } else if (evt.type === 'error') {
             // Reported by the API inside the stream; distinct from the read
             // itself failing, which is the browser's doing.
@@ -2502,8 +2532,13 @@ function startAssistantMsg(side) {
   files.className = 'out-files';
   files.style.display = 'none';
   wrapper.appendChild(files);
+  const sources = document.createElement('div');
+  sources.className = 'sources';
+  sources.style.display = 'none';
+  sources.innerHTML = '<div class="src-label">sources</div>';
+  wrapper.appendChild(sources);
   container.appendChild(wrapper);
-  return { container, wrapper, think, thinkBody, tools, body, files };
+  return { container, wrapper, think, thinkBody, tools, body, files, sources, seenUrls: new Set() };
 }
 
 function addToolChip(h, label) {
@@ -2565,6 +2600,25 @@ async function runStream(side, userText, attachments) {
           h.container.scrollTop = h.container.scrollHeight;
         },
         onTool: label => { ensure(); addToolChip(h, label); },
+        onCite: cites => {
+          ensure();
+          for (const c of cites) {
+            const url = c.url;
+            if (!url || h.seenUrls.has(url)) continue;
+            h.seenUrls.add(url);
+            const a = document.createElement('a');
+            a.className = 'src';
+            a.href = url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            let host = url;
+            try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+            a.textContent = `${h.seenUrls.size}. ${c.title || host}`;
+            a.title = url;
+            h.sources.appendChild(a);
+          }
+          h.sources.style.display = h.seenUrls.size ? '' : 'none';
+        },
         onFiles: ids => {
           ensure();
           ids.forEach(id => renderFile(h.files, id));

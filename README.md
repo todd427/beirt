@@ -18,14 +18,14 @@ local clone. They are the same file, and neither one has anything behind it.
 - Two independent panes — **α Alpha** and **β Beta** — each with its own model, system prompt, and conversation history
 - **Streaming** — responses render token-by-token live in each pane (both panes stream in parallel)
 - **Reasoning** — on models that think by default (Fable 5, Opus 5, Sonnet 5) the pane streams a summary of the model's reasoning while it works, then folds it away once the answer starts. Thinking is billed the same whether or not it is shown, so this costs nothing extra
-- **Web access** — optional `🌐 Web` toggle gives both panes Anthropic-hosted web search + fetch; tool activity is shown inline
+- **Web access** — optional `🌐 Web` toggle gives both panes Anthropic-hosted web search + fetch; tool activity is shown inline, and cited pages are listed as sources under the answer
 - **MCP connections** — add your own MCP servers from **⚙ Advanced** in the header: URL, bearer token, and a per-server allow-list of permitted tools. Off by default, deny-by-default, remembered between sessions, exportable as JSON
 - **Route selector** — send to Alpha only, Both (parallel), or Beta only
 - **Cross-send** — send any response from one pane to the other as a new user message
 - **Presets** — one-click system-prompt pairs (Sceptic ⚔ Builder, Red ⚔ Blue team, Line ⚔ Dev editor)
 - **Configurable max tokens** — set the per-reply output budget; truncated replies are flagged
 - **File attachments** — images (vision), PDFs, text/code files; drag and drop works
-- **Spend tracking** — a running session cost estimate + token totals, computed per-model from the API's `usage`. Anthropic prices in USD; Settings can show the figure in EUR or GBP at a rate you set, with the USD amount kept in the tooltip
+- **Spend tracking** — a running session cost estimate + token totals, computed per-model from the API's `usage`, including the per-request charge for server-side web searches ($10 per 1,000). Anthropic prices in USD; Settings can show the figure in EUR or GBP at a rate you set, with the USD amount kept in the tooltip
 - **Copy** — every question and answer has a copy button, writing rendered HTML for documents and the original Markdown for editors. Generated images travel with the HTML
 - **Code execution** — an optional `⌗ Code` toggle lets both panes run code server-side. Charts and files it produces are fetched back through the Files API and shown inline, with a download link. Implicit when `🌐 Web` is on for models with dynamic search, so the toggle is only needed with web off
 - **Export MD** — downloads both conversation threads as a timestamped Markdown file
