@@ -1113,6 +1113,8 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
   padding: 3px 8px; cursor: pointer;
 }
 .srv-tok { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-faint); margin-top: 10px; }
+.srv-empty { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--error); margin-right: 6px; }
+.tool-tag.all { border-style: solid; border-color: var(--left-accent); color: var(--text); }
 .srv-blocked, .srv-sent { font-family: 'IBM Plex Mono', monospace; font-size: 10px; margin-top: 6px; }
 .srv-blocked { color: var(--error); }
 .srv-sent { color: var(--left-ink); }
@@ -1450,6 +1452,7 @@ const API_VERSION = '2023-06-01';
 const MCP_BETA    = 'mcp-client-2025-11-20';
 const FILES_URL   = 'https://api.anthropic.com/v1/files';
 const FILES_BETA  = 'files-api-2025-04-14';
+const ALL_TOOLS   = '*';  // allow-list sentinel: every tool the server exposes
 const MAX_RETRIES = 2;  // transient stream faults only; each retry re-bills input
 // Models taking the dynamic-filtering server tools. Everything else keeps the
 // basic variants — the pair is per-model, not per-account.
@@ -1675,8 +1678,12 @@ function renderServers() {
       </div>
       <div class="srv-tools">
         <span class="feat-k" style="padding:0;margin-right:4px">Allowed</span>
-        ${s.tools.map((t, j) => `<span class="tool-tag">${escHtml(t)}<button onclick="removeTool(${i},${j})">✕</button></span>`).join('')}
-        <button class="tool-add" onclick="addTool(${i})">＋ tool</button>
+        ${s.tools.length === 0 ? '<span class="srv-empty">nothing yet — this server can be called for nothing until you say what it may do</span>' : ''}
+        ${s.tools.map((t, j) => t === ALL_TOOLS
+          ? `<span class="tool-tag all">every tool this server exposes<button onclick="removeTool(${i},${j})">✕</button></span>`
+          : `<span class="tool-tag">${escHtml(t)}<button onclick="removeTool(${i},${j})">✕</button></span>`).join('')}
+        <button class="tool-add" onclick="addTool(${i})">＋ name tools</button>
+        ${s.tools.includes(ALL_TOOLS) ? '' : `<button class="tool-add" onclick="allowAllTools(${i})">allow all</button>`}
       </div>
       <div class="srv-tok">token ${s.token ? '••••••••' + escHtml(s.token.slice(-4)) : '(none)'}
         · <button class="srv-rm" style="font-size:10px;border-bottom:1px solid currentColor" onclick="replaceToken(${i})">replace</button></div>
@@ -1700,18 +1707,24 @@ function addServer() {
 function removeServer(i) { servers.splice(i, 1); saveServers(); }
 function toggleServer(i) {
   if (!servers[i].on && !servers[i].tools.length) {
-    alert('Name at least one allowed tool before enabling this server.');
+    alert('This server may do nothing yet. Use "＋ name tools" to list what it can call, or "allow all" to hand over its whole toolset.');
     return;
   }
   servers[i].on = !servers[i].on;
   saveServers();
 }
+function allowAllTools(i) {
+  servers[i].tools = [ALL_TOOLS];
+  saveServers();
+}
+
 function addTool(i) {
   // A server's useful allow-list is most of its toolset, and one prompt per
   // name made naming six of them a chore worth avoiding — which left the list
   // empty, which is the state that silently stops the server being sent.
   const t = prompt('Tool names to allow, separated by commas — exactly as the server exposes them:');
   if (!t) return;
+  if (servers[i].tools.includes(ALL_TOOLS)) servers[i].tools = [];
   const seen = new Set(servers[i].tools);
   t.split(/[,\n]/).map(x => x.trim()).filter(Boolean).forEach(n => {
     if (!seen.has(n)) { seen.add(n); servers[i].tools.push(n); }
@@ -2171,9 +2184,14 @@ function buildTools(model) {
   const mcpServers = [];
   servers.filter(s => s.on && s.token && s.tools.length).forEach(s => {
     mcpServers.push({ type: 'url', url: s.url, name: s.name, authorization_token: s.token });
-    const configs = {};
-    for (const t of s.tools) configs[t] = { enabled: true };
-    tools.push({ type: 'mcp_toolset', mcp_server_name: s.name, default_config: { enabled: false }, configs });
+    if (s.tools.includes(ALL_TOOLS)) {
+      // Deliberately the whole toolset: no per-tool entries, default on.
+      tools.push({ type: 'mcp_toolset', mcp_server_name: s.name, default_config: { enabled: true } });
+    } else {
+      const configs = {};
+      for (const t of s.tools) configs[t] = { enabled: true };
+      tools.push({ type: 'mcp_toolset', mcp_server_name: s.name, default_config: { enabled: false }, configs });
+    }
   });
   return { tools, mcpServers };
 }

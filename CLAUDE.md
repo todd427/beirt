@@ -54,9 +54,14 @@ that changes the typeface as well as the colours.
 
 ## MCP
 
-- Deny-by-default: `default_config: { enabled: false }` plus one explicit entry
-  per permitted tool. Never send a toolset with everything enabled.
-- A server cannot be enabled with an empty allow-list. Keep that guard.
+- Deny-by-default is the default, not the only option: `default_config:
+  { enabled: false }` plus one explicit entry per permitted tool. The `*`
+  sentinel in a server's `tools` means the whole toolset — it sends
+  `default_config: { enabled: true }` and no per-tool entries. It is a
+  deliberate, visible choice, never the state a new server starts in.
+- A server cannot be enabled with an empty allow-list. Keep that guard: the
+  empty row must say what it means, since a server that looks configured but
+  is silently unsent is indistinguishable from one that is down.
 - Tokens follow the same keep mode as the API key.
 - Exported JSON strips tokens. Keep it that way.
 - Do not hard-code any server. The upstream project's private servers were
