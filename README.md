@@ -74,7 +74,7 @@ That does mean the key is present in the page, which is a real trade — see [SE
 
 ## MCP connections
 
-Beirt is just another client for the Messages API, so it can reach any MCP server you can. Settings → MCP takes a name, a URL, a bearer token, and an explicit list of allowed tool names. A server starts disabled with an empty allow-list and cannot be enabled until you name at least one tool.
+Beirt is just another client for the Messages API, so it can reach any MCP server you can. Settings → MCP takes a name, a URL, a bearer token, and the tools it may call. A server starts disabled with an empty allow-list and cannot be enabled until you either name the tools — commas or newlines, several at once — or choose **allow all**, which hands over the server's whole toolset. Naming tools supersedes allow-all, so the two never disagree.
 
 Connections configured in other Claude products cannot be imported. Those are configuration of *those products*, held against your account there; an API key authenticates model access and billing, and no endpoint hands out an app's saved connector list. Every API client declares its own `mcp_servers` per request. Beirt remembers yours locally and exports them as JSON so you can move them between browsers by hand.
 
