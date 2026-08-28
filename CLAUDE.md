@@ -62,6 +62,10 @@ that changes the typeface as well as the colours.
 - A server cannot be enabled with an empty allow-list. Keep that guard: the
   empty row must say what it means, since a server that looks configured but
   is silently unsent is indistinguishable from one that is down.
+- Allow-list entries are the server's own tool names, unprefixed. The model
+  sees them namespaced (`mnemos_query_memory`), but `configs` is keyed by
+  what the server exposes (`query_memory`). Verified working against a live
+  server; do not "correct" the allow-list to the prefixed form.
 - Tokens follow the same keep mode as the API key.
 - Exported JSON strips tokens. Keep it that way.
 - Do not hard-code any server. The upstream project's private servers were
