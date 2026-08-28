@@ -740,6 +740,27 @@ textarea.sys-prompt:focus { color: var(--text); }
   transition: all 0.15s;
 }
 .route-btn:hover { color: var(--text); border-color: var(--text-dim); }
+/* The solo toggle lives in the pane head rather than the toolbar. The header
+   already wraps to four rows on a phone and eats 27% of the screen; a fourth
+   segmented control there cost 33px of the very height this feature exists to
+   give back. The pane head is a row that is on screen either way, so putting
+   it here costs nothing. Hidden until the layout needs it — see the block
+   below. */
+.solo-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 4px 7px;
+  flex-shrink: 0;
+}
+.solo-btn:hover { border-color: var(--text-dim); color: var(--text); }
+.solo-btn.soloed { background: var(--tag-bg); border-color: var(--text); color: var(--text); }
+
 .route-btn.active-left  { background: var(--left-bg);  border-color: var(--left-accent);  color: var(--left-ink);  font-weight: 700; }
 .route-btn.active-both  { background: var(--tag-bg);   border-color: var(--text);         color: var(--text);      font-weight: 700; }
 .route-btn.active-right { background: var(--right-bg); border-color: var(--right-accent); color: var(--right-ink); font-weight: 700; }
@@ -1143,6 +1164,25 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
   .wel-col { padding: 28px 22px; justify-content: flex-start; }
   .wel-col > .mark { font-size: 200px; }
 }
+
+/* Below this the two panes stop being a comparison and start being two
+   unreadable columns — at 390px they are ~195px each, less padding. Stack
+   them; full width beats half width for reading a conversation. */
+@media (max-width: 760px) {
+  .panes { flex-direction: column; }
+}
+
+/* The view switch appears whenever the panes are cramped on EITHER axis, and
+   short counts. A phone held landscape clears the width test — 390px a pane,
+   same as stacked portrait — but leaves them about 158px tall once the header
+   and composer have taken their share. Rotating trades a narrow pane for a
+   short one, so the way out of both is reading one at a time. Stacked-both
+   stays the default: nothing is hidden unless you ask for it. */
+@media (max-width: 760px), (max-height: 480px) {
+  .solo-btn { display: inline-flex; }
+  .panes.view-left  .pane-right,
+  .panes.view-right .pane-left { display: none; }
+}
 </style>
 </head>
 <body>
@@ -1396,6 +1436,8 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       </select>
       <textarea class="sys-prompt" id="sys-left" placeholder="System prompt…"></textarea>
       <button class="btn-clear" onclick="clearPane('left')">Clear</button>
+      <button class="solo-btn" id="solo-left" onclick="toggleSolo('left')"
+              title="Show only this pane" aria-label="Show only this pane">⤢</button>
     </div>
     <div class="messages" id="msgs-left" data-sigil="α"></div>
   </div>
@@ -1416,6 +1458,8 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       </select>
       <textarea class="sys-prompt" id="sys-right" placeholder="System prompt…"></textarea>
       <button class="btn-clear" onclick="clearPane('right')">Clear</button>
+      <button class="solo-btn" id="solo-right" onclick="toggleSolo('right')"
+              title="Show only this pane" aria-label="Show only this pane">⤢</button>
     </div>
     <div class="messages" id="msgs-right" data-sigil="β"></div>
   </div>
@@ -1804,6 +1848,41 @@ function importServers(input) {
 
 // ── Theme ─────────────────────────────────────────────────────
 // "auto" is stored as a preference; the resolved palette is Paper or Folio.
+// ── Pane view (narrow screens) ────────────────────────────────
+// Deliberately separate from the send route below. Sending to both while
+// reading only Alpha is a normal thing to want, and folding the two together
+// would quietly take it away. On a wide screen this is inert: the CSS hides
+// the buttons and the view- class matches no rule.
+let viewMode = localStorage.getItem('beirt_view') || 'both';
+
+function setView(v) {
+  viewMode = v;
+  localStorage.setItem('beirt_view', v);
+  renderView();
+}
+function toggleSolo(side) {
+  // Second press on the pane you are already alone with puts the other back,
+  // so one control covers both directions and there is no way to strand
+  // yourself looking at a pane with no way out.
+  setView(viewMode === side ? 'both' : side);
+}
+function renderView() {
+  const panes = document.querySelector('.panes');
+  if (!panes) return;
+  panes.classList.remove('view-left', 'view-both', 'view-right');
+  panes.classList.add('view-' + viewMode);
+  ['left', 'right'].forEach(side => {
+    const b = document.getElementById('solo-' + side);
+    if (!b) return;
+    const soloed = viewMode === side;
+    b.classList.toggle('soloed', soloed);
+    b.textContent = soloed ? '⤡' : '⤢';
+    const label = soloed ? 'Show both panes' : 'Show only this pane';
+    b.title = label;
+    b.setAttribute('aria-label', label);
+  });
+}
+
 let themePref = localStorage.getItem('beirt_theme') || 'auto';
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -2978,6 +3057,7 @@ PERSIST_IDS.forEach(id => {
 })();
 
 // ── Boot ──────────────────────────────────────────────────────
+renderView();
 renderSpend();
 renderKeepUI();
 renderKeyChip();
