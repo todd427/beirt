@@ -1107,11 +1107,16 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
 .srv-top { display: flex; align-items: center; gap: 10px; }
 .srv-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--left-accent); flex-shrink: 0; }
 .srv.off .srv-dot { background: var(--text-faint); }
-.srv-name { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; }
+.srv-name, .srv-url {
+  background: none; border: none; padding: 0; text-align: left; cursor: pointer;
+  border-bottom: 1px solid transparent;
+}
+.srv-name { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; color: inherit; }
 .srv-url {
   font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.srv-name:hover, .srv-url:hover { color: var(--text); border-bottom-color: currentColor; }
 .srv-tog {
   margin-left: auto; flex-shrink: 0; min-width: 62px;
   background: transparent; border: 2px solid var(--border); border-radius: 5px;
@@ -1803,8 +1808,8 @@ function renderServers() {
     <div class="srv ${s.on ? '' : 'off'}">
       <div class="srv-top">
         <span class="srv-dot"></span>
-        <span class="srv-name">${escHtml(s.name)}</span>
-        <span class="srv-url">${escHtml(s.url)}</span>
+        <button class="srv-name" onclick="renameServer(${i})" title="Rename">${escHtml(s.name)}</button>
+        <button class="srv-url" onclick="editUrl(${i})" title="Change URL">${escHtml(s.url)}</button>
         <button class="srv-tog ${s.on ? 'on' : ''}" onclick="toggleServer(${i})">${s.on ? 'disable' : 'enable'}</button>
         <button class="srv-rm" onclick="removeServer(${i})" title="Remove">✕</button>
       </div>
@@ -1829,11 +1834,39 @@ function addServer() {
   const url   = document.getElementById('new-url').value.trim();
   const token = document.getElementById('new-token').value.trim();
   if (!name || !url) { alert('A name and URL are both required.'); return; }
-  if (servers.some(s => s.name === name)) { alert('That name is already in use.'); return; }
-  servers.push({ name, url, token, tools: [], on: false });   // deny-by-default
+  // Re-adding a known name is how someone reaches for "move this server", the
+  // form being the only field pair on the pane. Treat it as the edit it is,
+  // and keep the allow-list a delete-and-re-add would have thrown away.
+  const dup = servers.findIndex(s => s.name === name);
+  if (dup !== -1) {
+    if (servers[dup].url === url && !token) { alert(name + ' is already pointed at that URL.'); return; }
+    const what = servers[dup].url === url ? 'its token' : 'its URL' + (token ? ' and token' : '');
+    if (!confirm(name + ' already exists. Replace ' + what + ', keeping its allow-list?')) return;
+    servers[dup].url = url;
+    if (token) servers[dup].token = token;
+  } else {
+    servers.push({ name, url, token, tools: [], on: false });   // deny-by-default
+  }
   document.getElementById('new-name').value = '';
   document.getElementById('new-url').value = '';
   document.getElementById('new-token').value = '';
+  saveServers();
+}
+function editUrl(i) {
+  const u = prompt('URL for ' + servers[i].name + ':', servers[i].url);
+  if (u === null) return;
+  if (!u.trim()) { alert('A URL is required.'); return; }
+  servers[i].url = u.trim();
+  saveServers();
+}
+function renameServer(i) {
+  // The name is the prefix the model sees on every tool, not just a label.
+  const n = prompt('Name for this server — the model sees it prefixed onto every tool it exposes:', servers[i].name);
+  if (n === null) return;
+  const name = n.trim();
+  if (!name) { alert('A name is required.'); return; }
+  if (servers.some((s, j) => j !== i && s.name === name)) { alert('That name is already in use.'); return; }
+  servers[i].name = name;
   saveServers();
 }
 function removeServer(i) { servers.splice(i, 1); saveServers(); }
