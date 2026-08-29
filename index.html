@@ -687,6 +687,12 @@ textarea.sys-prompt:focus { color: var(--text); }
 .msg-body hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
 
 /* ── Error ─────────────────────────────────────────────────── */
+/* The féirín wall. Reuses .backdrop/.dialog wholesale — this is the settings
+   modal's furniture, not a second modal system. */
+.spent-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; }
+.spent-actions .go-btn { display: inline-flex; align-items: center; height: 32px; text-decoration: none; }
+.spent-sum { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); margin: 2px 0 10px; }
+
 .error-bubble {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
@@ -1419,6 +1425,28 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
   </div>
 </header>
 
+<!-- ══ FÉIRÍN SPENT — the conversion moment ════════════════════ -->
+<div class="backdrop" id="spent-backdrop">
+  <div class="dialog">
+    <h2>Your féirín is spent</h2>
+    <div class="spent-sum" id="spent-sum">The demo budget is used up</div>
+    <p>That is the end of the gift, but not the end of Beirt. It is free and
+       open source, and it runs on your own Anthropic key — same panes, same
+       models, same MCP servers, nothing here changes.</p>
+    <p>You pay Anthropic directly for what you use. The key stays in this
+       browser; there is no server in this app to send it to.</p>
+    <div class="spent-actions">
+      <a class="go-btn" href="https://console.anthropic.com/settings/keys"
+         target="_blank" rel="noopener">Get a key ↗</a>
+      <button class="keep-btn" onclick="closeSpent(); openSettings('key')">I have one — paste it</button>
+      <button class="keep-btn" onclick="closeSpent()">Not now</button>
+    </div>
+    <div class="note">Put a spend limit on it in the console — the same
+      protection this féirín had, and the reason it could be handed to you
+      safely in the first place.</div>
+  </div>
+</div>
+
 <div class="panes">
   <div class="pane pane-left" id="pane-left">
     <div class="pane-head">
@@ -1565,6 +1593,14 @@ try { budget = JSON.parse(localStorage.getItem('beirt_budget') || 'null'); } cat
   const p = new URLSearchParams(location.hash.slice(1));
   const k = (p.get('key') || '').trim();
   if (!k.startsWith('sk-ant-')) return;
+
+  // Remember it, rather than the session-only default. A féirín is one-shot
+  // and Féirín has already marked it claimed by the time this runs, so under
+  // session-only a closed tab strands the holder and burns the gift with
+  // nobody ever reaching the wall — the moment the whole thing exists for.
+  // Beirt's own advice about localStorage is to use a key with a spend limit,
+  // and a féirín is definitionally one.
+  setKeepMode('remember');
   storeKey(k);
 
   // Gauge in USD because that is what spend.usd counts and what Anthropic
@@ -1576,6 +1612,24 @@ try { budget = JSON.parse(localStorage.getItem('beirt_budget') || 'null'); } cat
 
   history.replaceState(null, '', location.pathname + location.search);
 })();
+
+// The wall is the conversion moment, and it happens exactly once even though
+// both panes hit it: a question sent to Both produces two identical spend-limit
+// errors within milliseconds of each other.
+let spentShown = false;
+
+function showSpent(force) {
+  if (spentShown && !force) return;
+  spentShown = true;
+  const sum = document.getElementById('spent-sum');
+  if (sum) sum.textContent = budget && budget.eur
+    ? `You have used the whole €${budget.eur}`
+    : 'The demo budget is used up';
+  document.getElementById('spent-backdrop').classList.add('show');
+}
+function closeSpent() {
+  document.getElementById('spent-backdrop').classList.remove('show');
+}
 
 function forgetBudget() {
   budget = null;
@@ -2149,12 +2203,22 @@ function hideThinking(side) {
 }
 
 // ── Error ─────────────────────────────────────────────────────
-function showError(side, msg, keyProblem) {
+function showError(side, msg, keyProblem, budgetExhausted) {
   const container = document.getElementById('msgs-' + side);
   const el = document.createElement('div');
   el.className = 'error-bubble';
   el.textContent = '⚠ ' + msg;
-  if (keyProblem) {
+  if (budgetExhausted && budget) {
+    // Only for a féirín. The spend-limit match fires for anyone who caps their
+    // own key too, and telling someone who already has a key that their gift
+    // ran out and they should go get a key is nonsense — they get the plain
+    // bubble and no offer.
+    const b = document.createElement('button');
+    b.textContent = 'Keep going →';
+    b.onclick = () => showSpent(true);
+    el.append(' ', b);
+    showSpent();
+  } else if (keyProblem) {
     const b = document.createElement('button');
     b.textContent = 'Open key settings';
     b.onclick = () => openSettings('key');
@@ -2412,7 +2476,7 @@ async function streamClaude(side, userText, attachments, hooks) {
         e.keyProblem = false;
         e.retryable = false;
         e.budgetExhausted = true;
-        if (budget) e.message = 'demo budget exhausted — ask Todd for more.';
+        if (budget) e.message = 'the féirín is spent — this demo budget is used up.';
       }
       throw e;
     }
@@ -2874,7 +2938,7 @@ async function runStream(side, userText, attachments) {
       }
       hideThinking(side);
       if (h) h.wrapper.remove();
-      showError(side, err.message, !!err.keyProblem);
+      showError(side, err.message, !!err.keyProblem, !!err.budgetExhausted);
       return;
     }
   }
