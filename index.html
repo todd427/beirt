@@ -1795,7 +1795,6 @@ function renderMcpCount() {
 // end like the server being down.
 function serverBlockedReason(s) {
   if (!s.on) return 'off — not sent';
-  if (!s.token) return 'no token — not sent';
   if (!s.tools.length) return 'no tools allowed — not sent';
   return null;
 }
@@ -1825,8 +1824,8 @@ function renderServers() {
         <button class="tool-add" onclick="addTool(${i})">＋ name tools</button>
         ${s.tools.includes(ALL_TOOLS) ? '' : `<button class="tool-add" onclick="allowAllTools(${i})">allow all</button>`}
       </div>
-      <div class="srv-tok">token ${s.token ? '••••••••' + escHtml(s.token.slice(-4)) : '(none)'}
-        · <button class="srv-rm" style="font-size:10px;border-bottom:1px solid currentColor" onclick="replaceToken(${i})">replace</button></div>
+      <div class="srv-tok">token ${s.token ? '••••••••' + escHtml(s.token.slice(-4)) : '(none) — called unauthenticated'}
+        · <button class="srv-rm" style="font-size:10px;border-bottom:1px solid currentColor" onclick="replaceToken(${i})">${s.token ? 'replace' : 'set one'}</button></div>
       ${(r => r ? `<div class="srv-blocked">⚠ ${escHtml(r)}</div>` : '<div class="srv-sent">✓ sent with every request</div>')(serverBlockedReason(s))}
     </div>`).join('');
   renderMcpCount();
@@ -2410,8 +2409,12 @@ function buildTools(model) {
   }
 
   const mcpServers = [];
-  servers.filter(s => s.on && s.token && s.tools.length).forEach(s => {
-    mcpServers.push({ type: 'url', url: s.url, name: s.name, authorization_token: s.token });
+  // No token is a legitimate configuration — an open server takes none, and
+  // refusing to send one made it indistinguishable from a server that is down.
+  servers.filter(s => s.on && s.tools.length).forEach(s => {
+    const srv = { type: 'url', url: s.url, name: s.name };
+    if (s.token) srv.authorization_token = s.token;
+    mcpServers.push(srv);
     if (s.tools.includes(ALL_TOOLS)) {
       // Deliberately the whole toolset: no per-tool entries, default on.
       tools.push({ type: 'mcp_toolset', mcp_server_name: s.name, default_config: { enabled: true } });
@@ -2445,6 +2448,46 @@ function renderStreamUI() {
     : 'Replies render as they arrive. If a stream is cut before anything shows, Beirt retries it whole and switches this to Off.';
 }
 
+// Every tool Beirt declares is executed inside the API — there is no
+// client-side tool loop here. A plain `tool_use` block is a call the API
+// expects this end to answer, and nothing here can. Left in the history it
+// fails every later send in that pane with "tool_use ids were found without
+// tool_result blocks", which reads as the pane being broken rather than as one
+// tool call having gone unanswered.
+function dropClientTools(round, hooks) {
+  return round.filter(b => {
+    if (b?.type !== 'tool_use') return true;
+    hooks.onTool(`⚠ ${b.name || 'tool'}: nothing here can run this — dropped`);
+    return false;
+  });
+}
+
+// Heals a pane that is already holding one, so recovery does not need a reload.
+// Server-side calls are exempt: `server_tool_use` and `mcp_tool_use` are
+// resolved within the same assistant turn, and a paused turn is mid-round.
+function pruneUnanswered(msgs) {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (m.role !== 'assistant' || !Array.isArray(m.content)) continue;
+    const answered = new Set();
+    const next = msgs[i + 1];
+    if (next?.role === 'user' && Array.isArray(next.content)) {
+      next.content.forEach(b => { if (b?.type === 'tool_result' && b.tool_use_id) answered.add(b.tool_use_id); });
+    }
+    const kept = m.content.filter(b => b?.type !== 'tool_use' || answered.has(b.id));
+    if (kept.length === m.content.length) continue;
+    if (kept.length) { m.content = kept; continue; }
+    // Nothing left of the turn. Drop it, and fold together the user turns it
+    // was separating so the roles still alternate.
+    msgs.splice(i, 1);
+    const prev = msgs[i - 1], now = msgs[i];
+    if (prev?.role === 'user' && now?.role === 'user' && Array.isArray(prev.content) && Array.isArray(now.content)) {
+      prev.content = prev.content.concat(now.content);
+      msgs.splice(i, 1);
+    }
+  }
+}
+
 async function streamClaude(side, userText, attachments, hooks) {
   const key = getKey();
   if (!key) { const e = new Error('No API key set.'); e.keyProblem = true; throw e; }
@@ -2453,6 +2496,7 @@ async function streamClaude(side, userText, attachments, hooks) {
   const sys   = document.getElementById('sys-' + side).value.trim();
 
   histories[side].push({ role: 'user', content: buildContent(userText, attachments) });
+  pruneUnanswered(histories[side]);
 
   let answer = '', thinking = '', stopReason = null, guard = 0, asstIdx = -1;
   // Some browsers drop a long-lived chunked response part-way and reject the
@@ -2519,7 +2563,7 @@ async function streamClaude(side, userText, attachments, hooks) {
 
     if (!useStream) {
       const data = await res.json();
-      const round = (data.content || []).filter(b => b && !(b.type === 'text' && !b.text?.trim()));
+      const round = dropClientTools((data.content || []).filter(b => b && !(b.type === 'text' && !b.text?.trim())), hooks);
       round.forEach((b, n) => {
         if (b.type !== 'text') return;
         const prev = round[n - 1];
@@ -2712,7 +2756,7 @@ async function streamClaude(side, userText, attachments, hooks) {
     // delta leaves {type:'text', text:''}, which the API rejects as input.
     // Thinking blocks are exempt — models that think replay them verbatim,
     // empty text and all, and a modified one is rejected.
-    const round = blocks.filter(b => b && !(b.type === 'text' && !b.text?.trim()));
+    const round = dropClientTools(blocks.filter(b => b && !(b.type === 'text' && !b.text?.trim())), hooks);
     if (round.length) {
       if (asstIdx === -1) asstIdx = histories[side].push({ role: 'assistant', content: round }) - 1;
       else histories[side][asstIdx].content.push(...round);
