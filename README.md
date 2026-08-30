@@ -22,7 +22,7 @@ local clone. They are the same file, and neither one has anything behind it.
 - **MCP connections** — add your own MCP servers from **⚙ Advanced** in the header: URL, bearer token, and a per-server allow-list of permitted tools. Off by default, deny-by-default, remembered between sessions, exportable as JSON
 - **Route selector** — send to Alpha only, Both (parallel), or Beta only
 - **Cross-send** — send any response from one pane to the other as a new user message
-- **Presets** — one-click system-prompt pairs (Sceptic ⚔ Builder, Red ⚔ Blue team, Line ⚔ Dev editor)
+- **Stances** — one-click system-prompt pairs (Sceptic ⚔ Builder, Red ⚔ Blue team, Line ⚔ Dev editor, Ship ⚔ Wait, Buy ⚔ Build, Cost ⚔ Capability)
 - **Configurable max tokens** — set the per-reply output budget; truncated replies are flagged
 - **Search budget** — a `searches` control caps web searches per reply. Each search is billed at $0.01 on top of tokens and both panes search independently, so this is the dial that moves the bill most on research turns
 - **File attachments** — images (vision), PDFs, text/code files; drag and drop works

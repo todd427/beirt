@@ -265,7 +265,7 @@ header {
 .icon-btn:hover { border-color: var(--text-dim); color: var(--text); }
 .icon-btn:active { background: var(--tag-bg); }
 
-select.preset-sel {
+select.stance-sel {
   background: none;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -276,7 +276,7 @@ select.preset-sel {
   font-family: 'IBM Plex Mono', monospace;
   flex-shrink: 0;
 }
-select.preset-sel:hover { border-color: var(--text-dim); color: var(--text); }
+select.stance-sel:hover { border-color: var(--text-dim); color: var(--text); }
 
 .maxtok {
   display: flex;
@@ -1216,7 +1216,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
         <div class="feat">
           <div class="feat-row"><div class="feat-k">Two panes</div><div class="feat-v">α and β each keep their own model, system prompt and history.</div></div>
           <div class="feat-row"><div class="feat-k">Cross-send</div><div class="feat-v">Fire β's reply at α as a new user message, in one click.</div></div>
-          <div class="feat-row"><div class="feat-k">Presets</div><div class="feat-v">Sceptic ⚔ Builder · Red ⚔ Blue team · Line ⚔ Dev editor.</div></div>
+          <div class="feat-row"><div class="feat-k">Stances</div><div class="feat-v">Six matched pairs — Sceptic ⚔ Builder, Red ⚔ Blue team, Ship ⚔ Wait …</div></div>
           <div class="feat-row"><div class="feat-k">Web, files</div><div class="feat-v">Optional web search and fetch; drop in images, PDFs and code.</div></div>
         </div>
         <div class="tryit">
@@ -1400,11 +1400,14 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <input type="checkbox" id="codeToggle">
       <span>⌗ Code</span>
     </label>
-    <select class="preset-sel" id="presetSel" onchange="applyPreset(this.value)" title="Load a system-prompt preset into both panes">
-      <option value="">Presets…</option>
+    <select class="stance-sel" id="stanceSel" onchange="applyStance(this.value)" title="Load a matched pair of system prompts into the two panes">
+      <option value="">Stances…</option>
       <option value="archreview">Sceptic ⚔ Builder</option>
       <option value="redblue">Red ⚔ Blue team</option>
       <option value="writing">Line ⚔ Dev editor</option>
+      <option value="shipwait">Ship ⚔ Wait</option>
+      <option value="buybuild">Buy ⚔ Build</option>
+      <option value="costcap">Cost ⚔ Capability</option>
       <option value="clear">Clear prompts</option>
     </select>
     <label class="maxtok" title="Max output tokens per reply">
@@ -3098,8 +3101,8 @@ const codeToggle = document.getElementById('codeToggle');
 codeToggle.checked = localStorage.getItem('beirt_code') === '1';
 codeToggle.addEventListener('change', () => localStorage.setItem('beirt_code', codeToggle.checked ? '1' : '0'));
 
-// ── Presets ───────────────────────────────────────────────────
-const PRESETS = {
+// ── Stances ───────────────────────────────────────────────────
+const STANCES = {
   archreview: {
     left:  'You are a sceptical software architect. Challenge every assumption. Find the failure mode, the edge case, the thing that breaks at scale. Be concise and specific.',
     right: 'You are a pragmatic builder. Find the simplest design that ships and works. Be concise and specific.'
@@ -3111,17 +3114,29 @@ const PRESETS = {
   writing: {
     left:  'You are a demanding line editor. Cut fluff, flag weak arguments, tighten prose. Quote the lines you would change.',
     right: 'You are a generous developmental editor. Say what works, how to amplify it, and sketch the next draft.'
+  },
+  shipwait: {
+    left:  'You argue for shipping now. Name the smallest version that is honest about what it does not do, and say what you would learn from real use that no amount of thinking will tell you. Be concise.',
+    right: 'You argue for waiting. Name what is still unknown, what it would cost to find out, and what shipping early would make expensive to undo. Be concise.'
+  },
+  buybuild: {
+    left:  'You argue for taking the dependency. Name what already solves this, what it handles that a first attempt would miss, and what its maintenance actually costs. Be concise and specific.',
+    right: 'You argue for writing it yourself. Sketch how small the honest version is, name what the dependency drags in that is not needed here, and be clear about what you would be signing up to own.'
+  },
+  costcap: {
+    left:  'You argue for the cheapest thing that works. Prefer boring, small and already-running. Name what the expensive option is buying that is not needed yet, and what it costs to run and to reason about.',
+    right: 'You argue for building it properly. Look past today at what this becomes under real load and real users, and name the shortcut that will have to be undone rather than extended.'
   }
 };
-function applyPreset(name) {
+function applyStance(name) {
   if (name === 'clear') {
     document.getElementById('sys-left').value  = '';
     document.getElementById('sys-right').value = '';
-  } else if (PRESETS[name]) {
-    document.getElementById('sys-left').value  = PRESETS[name].left;
-    document.getElementById('sys-right').value = PRESETS[name].right;
+  } else if (STANCES[name]) {
+    document.getElementById('sys-left').value  = STANCES[name].left;
+    document.getElementById('sys-right').value = STANCES[name].right;
   }
-  document.getElementById('presetSel').value = '';
+  document.getElementById('stanceSel').value = '';
   saveSettings();
 }
 
