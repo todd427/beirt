@@ -1234,7 +1234,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
         <div class="kicker">What it needs from you</div>
         <h2 class="wel-h">One Anthropic API key</h2>
         <div class="asks">
-          <div class="ask"><span class="dash">—</span><span>Requests go straight from this page to <code>api.anthropic.com</code>. There is no server in between and no account to make.</span></div>
+          <div class="ask"><span class="dash">—</span><span id="wel-route">Requests go straight from this page to <code>api.anthropic.com</code>. There is no server in between and no account to make.</span></div>
           <div class="ask"><span class="dash">—</span><span>Usage is billed to your own account. A running cost sits in the header from your first reply.</span></div>
           <div class="ask"><span class="dash">—</span><span>Use a dedicated key with a spend limit. You can forget it from the header at any time.</span></div>
         </div>
@@ -1255,7 +1255,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
         </div>
         <div class="note" id="keep-note">Held in memory for this tab only. Closing it forgets the key.</div>
 
-        <button class="disclose" onclick="openSettings('mcp')">
+        <button class="disclose" id="wel-mcp-btn" onclick="openSettings('mcp')">
           <span>Advanced — MCP connections</span>
           <span class="count" id="wel-mcp-count">none</span>
           <span class="chev">＋</span>
@@ -1283,7 +1283,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
     <h2>Settings</h2>
     <div class="tabs">
       <button class="tab on" data-tab="key"   onclick="showTab('key')">Key</button>
-      <button class="tab"    data-tab="mcp"   onclick="showTab('mcp')">MCP</button>
+      <button class="tab"    data-tab="mcp"   id="tab-btn-mcp" onclick="showTab('mcp')">MCP</button>
       <button class="tab"    data-tab="about" onclick="showTab('about')">About</button>
     </div>
 
@@ -1300,7 +1300,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
         <button class="keep-btn" id="keep-remember-2" onclick="setKeepMode('remember')">Remember on this device</button>
       </div>
       <div class="note" id="keep-note-2"></div>
-      <div class="note" style="margin-top:14px">
+      <div class="note" style="margin-top:14px" id="set-route">
         Requests go from this page straight to <code>api.anthropic.com</code>. Nothing is proxied and nothing is logged.
       </div>
 
@@ -1392,11 +1392,11 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
   <div class="header-spacer"></div>
   <div class="toolbar">
     <div class="theme-btns" id="app-themes"></div>
-    <label class="web-toggle" title="Let both panes search and fetch the web (Anthropic-hosted, server-side)">
+    <label class="web-toggle" id="webCtl" title="Let both panes search and fetch the web (Anthropic-hosted, server-side)">
       <input type="checkbox" id="webToggle">
       <span>🌐 Web</span>
     </label>
-    <label class="web-toggle" title="Let both panes run code server-side — charts, files, calculation. Implicit when Web is on for models with dynamic search.">
+    <label class="web-toggle" id="codeCtl" title="Let both panes run code server-side — charts, files, calculation. Implicit when Web is on for models with dynamic search.">
       <input type="checkbox" id="codeToggle">
       <span>⌗ Code</span>
     </label>
@@ -1410,7 +1410,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <option value="costcap">Cost ⚔ Capability</option>
       <option value="clear">Clear prompts</option>
     </select>
-    <label class="maxtok" title="Max output tokens per reply">
+    <label class="maxtok" id="maxTokCtl" title="Max output tokens per reply">
       <span>max tok</span>
       <input type="number" id="maxTokens" min="256" max="64000" step="1024" value="32000">
     </label>
@@ -1437,7 +1437,7 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
 <div class="backdrop" id="spent-backdrop">
   <div class="dialog">
     <h2>Your féirín is spent</h2>
-    <div class="spent-sum" id="spent-sum">The demo budget is used up</div>
+    <div class="spent-sum" id="spent-sum">Every comparison on it has been used</div>
     <p>That is the end of the gift, but not the end of Beirt. It is free and
        open source, and it runs on your own Anthropic key — same panes, same
        models, same MCP servers, nothing here changes.</p>
@@ -1449,9 +1449,9 @@ input.keyfield:focus, input.tfield:focus { border-color: var(--left-accent); }
       <button class="keep-btn" onclick="closeSpent(); openSettings('key')">I have one — paste it</button>
       <button class="keep-btn" onclick="closeSpent()">Not now</button>
     </div>
-    <div class="note">Put a spend limit on it in the console — the same
-      protection this féirín had, and the reason it could be handed to you
-      safely in the first place.</div>
+    <div class="note">Put a spend limit on it in the console. A féirín was
+      bounded by a count of comparisons, which is why it could be handed to you
+      safely; a key of your own has no such fence until you set one.</div>
   </div>
 </div>
 
@@ -1534,6 +1534,13 @@ const FILES_URL   = 'https://api.anthropic.com/v1/files';
 const FILES_BETA  = 'files-api-2025-04-14';
 const ALL_TOOLS   = '*';  // allow-list sentinel: every tool the server exposes
 const MAX_RETRIES = 2;  // transient stream faults only; each retry re-bills input
+
+// Féirín's proxy. Deliberately its own constant rather than a swap of API_URL:
+// a voucher session goes through Féirín, and a BYOK session must stay wholly
+// unaffected by whether Féirín is up.
+const FEIRIN_URL    = 'https://feirin.foxxelabs.ie/v1/messages';
+const FEIRIN_MODELS = [['claude-sonnet-5','Sonnet 5'], ['claude-haiku-4-5','Haiku 4.5']];
+const FEIRIN_MAXTOK = 2048;   // the proxy clamps here; the control should not promise more
 // Models taking the dynamic-filtering server tools. Everything else keeps the
 // basic variants — the pair is per-model, not per-account.
 // Models that think by default. `display` only changes visibility — thinking
@@ -1568,12 +1575,19 @@ function storeKey(k) {
   renderKeyChip();
 }
 function forgetKey() {
-  if (!confirm('Forget the API key on this device?')) return;
+  // A féirín session has no key of its own, so the same button is the way out
+  // of the voucher — and on a borrowed machine it is the one that matters.
+  const q = feirin
+    ? 'Leave this féirín and forget any key on this device?'
+    : 'Forget the API key on this device?';
+  if (!confirm(q)) return;
   sessionStorage.removeItem('beirt_key');
   localStorage.removeItem('beirt_key');
   document.getElementById('set-key').value = '';
   document.getElementById('wel-key').value = '';
-  forgetBudget();          // a féirín gauge outliving its key reads as a live cap
+  dropFeirin();            // a units gauge outliving its token reads as a live cap
+  applyFeirinUI();
+  renderSpend();
   renderKeyChip();
   closeSettings();
   showWelcome();
@@ -1586,63 +1600,152 @@ function setKeepMode(mode) {
   renderKeepUI();
   renderKeyChip();
 }
-// ── Féirín hand-off ───────────────────────────────────────────
-// A féirín (feirin.foxxelabs.ie) is a QR gift voucher that hands the key over
-// in the URL fragment: #key=sk-ant-…&budget=5&budget_usd=5.40. A fragment is
-// never sent to a server, so the key is not in Féirín's logs, not in this
-// page's, and not in any proxy between — which is the whole reason it arrives
-// this way rather than in a query string. Read it once, keep it under
-// whatever session/remember choice is already set, then wipe the address bar.
-let budget = null;
-try { budget = JSON.parse(localStorage.getItem('beirt_budget') || 'null'); } catch {}
+// ── Féirín ────────────────────────────────────────────────────
+// A féirín (feirin.foxxelabs.ie) is a QR gift voucher. It no longer hands over
+// an Anthropic key — it hands over a token worth a count of two-pane
+// comparisons, and Féirín itself sits in the serving path holding the key and
+// the count. The token arrives in the URL fragment, which is never sent to a
+// server, so it is not in Féirín's logs, not in this page's, and not in any
+// proxy between.
+//
+// sessionStorage, not localStorage: a room féirín is one QR on a slide passed
+// round a cohort, often on a shared or borrowed machine. A token that dies
+// with the tab is the right default. localStorage stays for the BYOK user's
+// own key.
+let feirin = null;   // { token, remaining, total } while a voucher session is live
 
 (function claimFeirin() {
-  if (!location.hash || location.hash.indexOf('key=') < 0) return;
-  const p = new URLSearchParams(location.hash.slice(1));
-  const k = (p.get('key') || '').trim();
-  if (!k.startsWith('sk-ant-')) return;
-
-  // Remember it, rather than the session-only default. A féirín is one-shot
-  // and Féirín has already marked it claimed by the time this runs, so under
-  // session-only a closed tab strands the holder and burns the gift with
-  // nobody ever reaching the wall — the moment the whole thing exists for.
-  // Beirt's own advice about localStorage is to use a key with a spend limit,
-  // and a féirín is definitionally one.
-  setKeepMode('remember');
-  storeKey(k);
-
-  // Gauge in USD because that is what spend.usd counts and what Anthropic
-  // bills; the euro figure is only the label off the printed card.
-  const usd = parseFloat(p.get('budget_usd'));
-  const eur = parseFloat(p.get('budget'));
-  budget = usd > 0 ? { usd, eur: eur > 0 ? eur : null } : null;
-  if (budget) localStorage.setItem('beirt_budget', JSON.stringify(budget));
-
-  history.replaceState(null, '', location.pathname + location.search);
+  const p   = new URLSearchParams(location.hash.slice(1));
+  const tok = (p.get('feirin') || '').trim();
+  if (tok) {
+    feirin = { token: tok, remaining: null, total: null };
+    sessionStorage.setItem('beirt_feirin', tok);
+    sessionStorage.removeItem('beirt_feirin_units');
+    // The fragment must not survive in the address bar — the same reason
+    // Féirín puts the token there rather than in a query string.
+    history.replaceState(null, '', location.pathname + location.search);
+    return;
+  }
+  const held = sessionStorage.getItem('beirt_feirin');
+  if (!held) return;
+  feirin = { token: held, remaining: null, total: null };
+  // Carried across a reload so the gauge is honest before the first call,
+  // rather than blank until one lands.
+  try {
+    const u = JSON.parse(sessionStorage.getItem('beirt_feirin_units') || 'null');
+    if (u) { feirin.remaining = u.remaining; feirin.total = u.total; }
+  } catch {}
 })();
 
+function dropFeirin() {
+  feirin = null;
+  sessionStorage.removeItem('beirt_feirin');
+  sessionStorage.removeItem('beirt_feirin_units');
+}
+
+// The proxy enforces all of this server-side. The UI matches it rather than
+// letting a claimant discover it as a 400 — a model that is refused rather
+// than substituted is the right call for a model-comparison tool, but only if
+// the tool never offers the refused one.
+function applyFeirinUI() {
+  const on = !!feirin;
+
+  ['left','right'].forEach((side, i) => {
+    const sel = document.getElementById('model-' + side);
+    if (!sel) return;
+    if (on) {
+      if (sel.dataset.full == null) sel.dataset.full = sel.innerHTML;
+      sel.innerHTML = FEIRIN_MODELS
+        .map(([v, label]) => `<option value="${v}">${label}</option>`).join('');
+      // One each: that pairing is the demo.
+      sel.value = FEIRIN_MODELS[i][0];
+    } else if (sel.dataset.full != null) {
+      sel.innerHTML = sel.dataset.full;
+      delete sel.dataset.full;
+    }
+  });
+
+  const mt = document.getElementById('maxTokens');
+  if (mt) {
+    mt.max = on ? FEIRIN_MAXTOK : 64000;
+    if (on && parseInt(mt.value, 10) > FEIRIN_MAXTOK) mt.value = FEIRIN_MAXTOK;
+  }
+  const mtc = document.getElementById('maxTokCtl');
+  if (mtc) mtc.title = on
+    ? `Max output tokens per reply. A féirín is capped at ${FEIRIN_MAXTOK}.`
+    : 'Max output tokens per reply';
+
+  // Web search bills on top of the tokens a comparison was budgeted at, and
+  // both panes search independently. The entitlement still holds; the
+  // difference comes out of whoever handed the féirín over.
+  // MCP goes with them. Not for cost — for the token: an mcp_servers block
+  // carries the user's own bearer tokens, and a voucher session must not put
+  // those through Féirín.
+  ['webCtl','codeCtl','searchCtl','advBtn','wel-mcp-btn','tab-btn-mcp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = on ? 'none' : '';
+  });
+  if (on) {
+    const w = document.getElementById('webToggle'), c = document.getElementById('codeToggle');
+    if (w) w.checked = false;
+    if (c) c.checked = false;
+  }
+
+  // "Nothing is proxied and nothing is logged" is false in a voucher session,
+  // and it is the one thing here that would actually be a lie. Féirín records
+  // which model was called and how many tokens moved — not prompts, not
+  // replies — and the claim page's privacy notice already says so.
+  const routed = 'Requests go through <code>feirin.foxxelabs.ie</code>, which holds the key ' +
+    'and counts your comparisons. It logs which model was called and how many tokens moved — ' +
+    'not your prompts and not the replies.';
+  const wel = document.getElementById('wel-route');
+  if (wel) wel.innerHTML = on ? routed
+    : 'Requests go straight from this page to <code>api.anthropic.com</code>. There is no server in between and no account to make.';
+  const set = document.getElementById('set-route');
+  if (set) set.innerHTML = on ? routed
+    : 'Requests go from this page straight to <code>api.anthropic.com</code>. Nothing is proxied and nothing is logged.';
+}
+
+// One two-pane comparison is one unit. The proxy sees two separate POSTs and
+// cannot tell which two belong together, so both panes of a question carry the
+// same id and the next question mints a new one. Omitting the header is always
+// the expensive choice — it is charged every time — which is what makes a
+// client-supplied discount safe to honour.
+function newComparison() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
+// Every Féirín response carries these, refusals included, and the number is
+// already decremented — it is what the comparison leaves behind, not what it
+// started with. Both panes of one comparison report the same figure. Do not
+// subtract again.
+function readUnits(res) {
+  if (!feirin) return;
+  const rem = parseInt(res.headers.get('X-Feirin-Units-Remaining'), 10);
+  const tot = parseInt(res.headers.get('X-Feirin-Units-Total'), 10);
+  if (Number.isFinite(rem)) feirin.remaining = rem;
+  if (Number.isFinite(tot)) feirin.total = tot;
+  try { sessionStorage.setItem('beirt_feirin_units', JSON.stringify({ remaining: feirin.remaining, total: feirin.total })); } catch {}
+  renderSpend();
+}
+
 // The wall is the conversion moment, and it happens exactly once even though
-// both panes hit it: a question sent to Both produces two identical spend-limit
-// errors within milliseconds of each other.
+// both panes hit it: a question sent to Both produces two identical 403s
+// within milliseconds of each other.
 let spentShown = false;
 
 function showSpent(force) {
   if (spentShown && !force) return;
   spentShown = true;
   const sum = document.getElementById('spent-sum');
-  if (sum) sum.textContent = budget && budget.eur
-    ? `You have used the whole €${budget.eur}`
-    : 'The demo budget is used up';
+  if (sum) sum.textContent = feirin && feirin.total
+    ? `All ${feirin.total} comparisons are used`
+    : 'Every comparison on it has been used';
   document.getElementById('spent-backdrop').classList.add('show');
 }
 function closeSpent() {
   document.getElementById('spent-backdrop').classList.remove('show');
-}
-
-function forgetBudget() {
-  budget = null;
-  localStorage.removeItem('beirt_budget');
-  renderSpend();
 }
 
 function renderKeepUI() {
@@ -1659,6 +1762,9 @@ function renderKeyChip() {
   const label = document.getElementById('keyChipLabel');
   const k = getKey();
   chip.classList.remove('session','missing');
+  // A voucher session is authenticated by the token, not the key, and saying
+  // "no key" to someone who is mid-comparison would read as broken.
+  if (feirin) { chip.classList.add('session'); label.textContent = 'féirín'; return; }
   if (!k) { chip.classList.add('missing'); label.textContent = 'no key'; return; }
   if (keepMode === 'session') { chip.classList.add('session'); label.textContent = 'session only'; return; }
   label.textContent = 'sk-ant…' + k.slice(-4);
@@ -1742,6 +1848,7 @@ function closeSettings() {
   document.getElementById('set-go').textContent = 'Verify';
 }
 function showTab(name) {
+  if (feirin && name === 'mcp') name = 'key';
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
   ['key','mcp','about'].forEach(n => document.getElementById('tab-' + n).classList.toggle('on', n === name));
 }
@@ -1794,6 +1901,7 @@ function renderMcpCount() {
 // sent, and the model simply never sees the tool — which looks from the other
 // end like the server being down.
 function serverBlockedReason(s) {
+  if (feirin) return 'not sent on a féirín — your servers stay out of the proxy';
   if (!s.on) return 'off — not sent';
   if (!s.tools.length) return 'no tools allowed — not sent';
   return null;
@@ -2243,11 +2351,10 @@ function showError(side, msg, keyProblem, budgetExhausted) {
   const el = document.createElement('div');
   el.className = 'error-bubble';
   el.textContent = '⚠ ' + msg;
-  if (budgetExhausted && budget) {
-    // Only for a féirín. The spend-limit match fires for anyone who caps their
-    // own key too, and telling someone who already has a key that their gift
-    // ran out and they should go get a key is nonsense — they get the plain
-    // bubble and no offer.
+  if (budgetExhausted && feirin) {
+    // Only for a féirín. Telling someone who already has a key that their gift
+    // ran out and they should go get a key is nonsense — a BYOK user who caps
+    // their own key gets the plain bubble and no offer.
     const b = document.createElement('button');
     b.textContent = 'Keep going →';
     b.onclick = () => showSpent(true);
@@ -2302,6 +2409,10 @@ try { spend = Object.assign(spend, JSON.parse(localStorage.getItem('beirt_spend'
 const SEARCH_USD = 0.01;
 
 function recordUsage(model, u) {
+  // In a féirín session Beirt is not watching its own spend — Féirín's headers
+  // are the only authority, and a local estimate of someone else's meter would
+  // be a second, wrong number.
+  if (feirin) return;
   const p = PRICING[model] || { in: 5, out: 25 };
   spend.usd += (u.in * p.in + u.cr * p.in * 0.1 + u.cc * p.in * 1.25 + u.out * p.out) / 1e6;
   spend.usd += (u.searches || 0) * SEARCH_USD;
@@ -2348,16 +2459,20 @@ function renderSpend() {
   const conv = currency.code === 'USD' ? '' : ` · $${spend.usd.toFixed(4)} at ${currency.rate}`;
   const srch = spend.searches ? ` · ${spend.searches} search${spend.searches === 1 ? '' : 'es'}` : '';
 
-  if (budget) {
-    // A gauge against a cap is read at a glance, so two decimals — the fourth
-    // is noise here even though it is the right precision for a bare counter.
-    const sym  = CURRENCIES[currency.code] || '$';
-    const rate = currency.rate || 1;
-    const frac = budget.usd > 0 ? spend.usd / budget.usd : 0;
-    el.textContent = `${sym}${(spend.usd * rate).toFixed(2)} / ${sym}${(budget.usd * rate).toFixed(2)}`;
-    el.style.color = frac >= 1 ? 'var(--error)' : frac >= 0.8 ? 'var(--warn)' : '';
-    const cap = budget.eur ? `€${budget.eur} féirín` : 'demo budget';
-    el.title = `${Math.round(frac * 100)}% of a ${cap} (estimate — Anthropic enforces the real cap)${conv} · in ${spend.in.toLocaleString()} tok · out ${spend.out.toLocaleString()} tok${srch} · click to reset`;
+  // A féirín gauge counts comparisons, not money. No currency symbol: units
+  // are not a wallet, and a claimant told they have "€3.40 left" would do
+  // arithmetic that is not true.
+  if (feirin) {
+    const r = feirin.remaining, t = feirin.total;
+    if (!Number.isFinite(r)) {
+      el.textContent = 'féirín';
+      el.style.color = '';
+      el.title = 'A féirín — comparisons left will show after the first question.';
+      return;
+    }
+    el.textContent = t ? `${r} of ${t} comparisons left` : `${r} comparisons left`;
+    el.style.color = r <= 0 ? 'var(--error)' : (t && r / t <= 0.2) || r <= 2 ? 'var(--warn)' : '';
+    el.title = 'One comparison is one question, whether you send it to one pane or both. Féirín counts them; this is its number, not an estimate.';
     return;
   }
 
@@ -2366,6 +2481,8 @@ function renderSpend() {
   el.title = `Session spend (estimate)${conv} · in ${spend.in.toLocaleString()} tok · out ${spend.out.toLocaleString()} tok${srch} · click to reset`;
 }
 function resetSpend() {
+  // Nothing here to reset: the count lives in Féirín, not in this page.
+  if (feirin) return;
   if (!confirm('Reset the session spend counter?')) return;
   spend = { usd: 0, in: 0, out: 0, searches: 0 };
   localStorage.setItem('beirt_spend', JSON.stringify(spend));
@@ -2381,6 +2498,7 @@ function maxSearches() {
 
 function maxTokens() {
   const v = parseInt(document.getElementById('maxTokens').value, 10);
+  if (feirin) return Math.min(Number.isFinite(v) && v >= 256 ? v : FEIRIN_MAXTOK, FEIRIN_MAXTOK);
   if (!Number.isFinite(v) || v < 256) return 32000;
   return Math.min(v, 64000);
 }
@@ -2409,6 +2527,12 @@ function buildTools(model) {
   }
 
   const mcpServers = [];
+  // Not in a voucher session. A server's authorization_token is the user's own
+  // secret and would otherwise travel through Féirín — and on a shared machine
+  // the servers in localStorage belong to whoever used the browser last, not
+  // to the claimant holding the token.
+  if (feirin) return { tools, mcpServers };
+
   // No token is a legitimate configuration — an open server takes none, and
   // refusing to send one made it indistinguishable from a server that is down.
   servers.filter(s => s.on && s.tools.length).forEach(s => {
@@ -2488,9 +2612,9 @@ function pruneUnanswered(msgs) {
   }
 }
 
-async function streamClaude(side, userText, attachments, hooks) {
+async function streamClaude(side, userText, attachments, hooks, comparison) {
   const key = getKey();
-  if (!key) { const e = new Error('No API key set.'); e.keyProblem = true; throw e; }
+  if (!feirin && !key) { const e = new Error('No API key set.'); e.keyProblem = true; throw e; }
 
   const model = document.getElementById('model-' + side).value;
   const sys   = document.getElementById('sys-' + side).value.trim();
@@ -2523,15 +2647,22 @@ async function streamClaude(side, userText, attachments, hooks) {
 
     const headers = {
       'content-type': 'application/json',
-      'x-api-key': key,
       'anthropic-version': API_VERSION,
-      'anthropic-dangerous-direct-browser-access': 'true',
     };
+    if (feirin) {
+      headers['authorization'] = 'Bearer ' + feirin.token;
+      // Both panes of a question send the same id; the second call is free.
+      // No header at all is charged every time, so this is never optional.
+      if (comparison) headers['X-Feirin-Comparison'] = comparison;
+    } else {
+      headers['x-api-key'] = key;
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    }
     if (mcpServers.length) headers['anthropic-beta'] = MCP_BETA;
 
     let res;
     try {
-      res = await fetch(API_URL, { method: 'POST', headers, body: JSON.stringify(payload) });
+      res = await fetch(feirin ? FEIRIN_URL : API_URL, { method: 'POST', headers, body: JSON.stringify(payload) });
     } catch (e) {
       // Never reached the API: no response, so nothing was generated and
       // nothing billed. Reconnecting is free, and on a flaky path it is what
@@ -2541,22 +2672,48 @@ async function streamClaude(side, userText, attachments, hooks) {
       throw err;
     }
 
+    // The units headers ride on refusals too, so the gauge stays honest through
+    // an error — read them before anything can throw.
+    readUnits(res);
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       const t = err?.error?.type;
       const e = new Error((err?.error?.message || 'request failed') + ` (${t || 'HTTP ' + res.status})`);
+
+      // Féirín answers in Anthropic's own error envelope, so the shape is the
+      // same; what changes is which status means what. 403 is the demo running
+      // out — the conversion moment — and 429 is emphatically not that.
+      if (feirin) {
+        if (res.status === 401) {
+          e.keyProblem = true;
+          e.message = 'this féirín is not valid — the token is missing, expired, or was not issued by Féirín.';
+        } else if (res.status === 403) {
+          e.budgetExhausted = true;
+          e.message = 'the féirín is spent — every comparison on it has been used.';
+        } else if (res.status === 429) {
+          e.retryable = true;
+          e.message = 'too fast for the féirín — six calls a minute, two at once. It will come back in a moment.';
+        } else if (res.status >= 500) {
+          e.retryable = true;
+          e.message = 'not your féirín — Féirín could not reach Anthropic just now. Try again shortly.';
+        } else if (res.status === 400) {
+          // The model and the token ceiling are both fixed by the UI, so a
+          // rejection of either is this page's fault, not the claimant's.
+          e.message = 'Beirt asked for something this féirín does not serve — ' + e.message;
+        }
+        throw e;
+      }
+
       if (res.status === 401 || res.status === 403) e.keyProblem = true;
       if (res.status === 429 || res.status >= 500) e.retryable = true;
-      // A féirín's workspace carries a hard monthly spend limit. Hitting it is
-      // not a bad key and not a flaky network — it is the demo running out,
-      // and "invalid_request_error" helps nobody standing in front of a room.
-      // Matched on the message rather than the status, because that is what
-      // actually carries the distinction.
+      // Hitting your own key's spend limit is not a bad key and not a flaky
+      // network, so it must not be retried or sent to key settings. Matched on
+      // the message rather than the status, because that is what carries the
+      // distinction.
       if (/spend limit|credit balance|billing/i.test(err?.error?.message || '')) {
         e.keyProblem = false;
         e.retryable = false;
-        e.budgetExhausted = true;
-        if (budget) e.message = 'the féirín is spent — this demo budget is used up.';
       }
       throw e;
     }
@@ -2935,7 +3092,7 @@ function finalizeAssistant(side, h, fullText, stopReason) {
 // assistant turn whose server_tool_use never received its result. Either is
 // malformed input that fails every later send in that pane, so rewind to the
 // mark on the way out. That rewind is also what makes a retry safe to attempt.
-async function runStream(side, userText, attachments) {
+async function runStream(side, userText, attachments, comparison) {
   const mark = histories[side].length;
   let h = null;
   const ensure = () => { if (!h) { hideThinking(side); h = startAssistantMsg(side); } return h; };
@@ -2980,7 +3137,7 @@ async function runStream(side, userText, attachments) {
           ids.forEach(id => renderFile(h.files, id));
           h.container.scrollTop = h.container.scrollHeight;
         },
-      });
+      }, comparison);
       ensure();
       finalizeAssistant(side, h, text, stopReason);
       return;
@@ -3010,10 +3167,12 @@ async function runStream(side, userText, attachments) {
         h.wrapper.appendChild(cont);
         return;
       }
-      if (err.retryable && attempt < MAX_RETRIES) {
+      if (err.retryable && attempt < (feirin ? 1 : MAX_RETRIES)) {
         // Keep the bubble so the pane does not flicker empty; say why it stalled.
         if (h) { h.tools.innerHTML = ''; h.body.innerHTML = ''; h.thinkBody.textContent = ''; h.think.style.display = 'none'; addToolChip(h, `\u21bb ${err.message} — retrying`); }
-        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+        // Féirín's limit is per minute, so half a second is not a pause — it
+        // is the same burst again.
+        await new Promise(r => setTimeout(r, (feirin ? 2500 : 500) * (attempt + 1)));
         continue;
       }
       hideThinking(side);
@@ -3027,7 +3186,7 @@ async function runStream(side, userText, attachments) {
 // ── Send ──────────────────────────────────────────────────────
 async function send() {
   if (busy) return;
-  if (!getKey()) { openSettings('key'); return; }
+  if (!feirin && !getKey()) { openSettings('key'); return; }
 
   const promptEl    = document.getElementById('prompt');
   const prompt      = promptEl.value.trim();
@@ -3047,7 +3206,10 @@ async function send() {
   sides.forEach(s => appendMsg(s, 'user', prompt, attachments));
   sides.forEach(s => showThinking(s));
 
-  await Promise.all(sides.map(s => runStream(s, prompt, attachments)));
+  // One id for the question, whichever panes it goes to. A question sent to a
+  // single pane is still one comparison — one the claimant chose not to make.
+  const cmp = feirin ? newComparison() : null;
+  await Promise.all(sides.map(s => runStream(s, prompt, attachments, cmp)));
   setStatus('Ready');
 
   busy = false;
@@ -3058,7 +3220,7 @@ async function send() {
 // ── Cross-send ────────────────────────────────────────────────
 async function crossSend(content, targetSide) {
   if (busy) return;
-  if (!getKey()) { openSettings('key'); return; }
+  if (!feirin && !getKey()) { openSettings('key'); return; }
 
   busy = true;
   document.getElementById('sendBtn').disabled = true;
@@ -3067,7 +3229,10 @@ async function crossSend(content, targetSide) {
   appendMsg(targetSide, 'user', content);
   showThinking(targetSide);
 
-  await runStream(targetSide, content);
+  // A cross-send is its own question into one pane, so it gets its own id and
+  // costs its own unit — pairing it with the comparison it came from would be
+  // claiming a discount that was not earned.
+  await runStream(targetSide, content, undefined, feirin ? newComparison() : null);
   setStatus('Ready');
 
   busy = false;
@@ -3214,11 +3379,16 @@ PERSIST_IDS.forEach(id => {
 
 // ── Boot ──────────────────────────────────────────────────────
 renderView();
+// After restoreSettings, so a remembered model or token ceiling the proxy will
+// not serve is narrowed rather than restored over.
+applyFeirinUI();
 renderSpend();
 renderKeepUI();
 renderKeyChip();
 renderServers();
-if (!getKey()) showWelcome();
+// A claimant arrives holding a token and lands straight in the app; the
+// welcome overlay is where a BYOK user hands over a key, and there is none.
+if (!feirin && !getKey()) showWelcome();
 </script>
 </body>
 </html>

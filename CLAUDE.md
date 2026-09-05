@@ -71,13 +71,59 @@ that changes the typeface as well as the colours.
 - Do not hard-code any server. The upstream project's private servers were
   removed on purpose; a stranger's key cannot reach them and shipping them would
   send dead configuration on every request.
+- Nothing MCP is sent in a féirín session, and the ways in are hidden. An
+  `mcp_servers` block carries the user's own bearer tokens, and the server list
+  lives in `localStorage` — so on a shared machine a claimant would otherwise
+  push the previous user's secrets through Féirín's proxy.
+
+## Féirín
+
+A féirín is a QR gift voucher. `#feirin=<token>` in the fragment puts the page
+into a voucher session: requests go to `https://feirin.foxxelabs.ie/v1/messages`
+with `Authorization: Bearer`, and Féirín holds the key and counts what is left.
+
+This does not break the invariant above, and must not be allowed to. It is a
+session the *user* opts into by scanning someone's voucher, gated on one
+condition, and a session without a token behaves exactly as it always did:
+`api.anthropic.com`, own key, own spend meter, all eight models, all tools,
+nothing in the path. Do not hoist `FEIRIN_URL` and `API_URL` into one constant
+— Féirín being down must stay invisible to a BYOK user. Do not add a proxy for
+anything else.
+
+Three things that are easy to get wrong:
+
+- **`X-Feirin-Comparison`.** One unit is one two-pane comparison, but the proxy
+  sees two independent POSTs. Both panes of a question send the same id and the
+  second is free; a missing header is charged every time. Forgetting it fails
+  silently and quietly halves every voucher, so `send()` mints one id for the
+  question and hands it to both panes. A cross-send is its own question and
+  gets its own id.
+- **The gauge is units, not money.** `X-Feirin-Units-Remaining` is the only
+  authority, it arrives on refusals too, and it is already decremented — both
+  panes report the same number, so do not subtract. `PRICES`, `recordUsage`
+  and the spend meter are for BYOK sessions, where Beirt really is watching its
+  own spend. Never put a currency figure on a féirín.
+- **The proxy serves two models, clamps `max_tokens` to 2048, and allows six
+  calls a minute with two in flight.** `applyFeirinUI()` matches the UI to
+  that rather than letting a claimant find out by 400, and hides the Web and
+  Code toggles — server-side search bills on top of what a comparison was
+  budgeted at, and the gift-giver wears the difference. MCP is hidden with
+  them, for the token rather than the cost; see the MCP section above.
+
+The copy that promises nothing is proxied and nothing is logged is false in a
+voucher session and is swapped there. Féirín logs which model was called and
+how many tokens moved — not prompts, not replies. Keep that honest.
 
 ## Naming
 
 All persisted keys are prefixed `beirt_`. If you add one, follow the prefix:
 `beirt_key`, `beirt_keep`, `beirt_theme`, `beirt_fs`, `beirt_spend`,
 `beirt_web`, `beirt_settings`, `beirt_mcp`, `beirt_mcp_tokens`, `beirt_mt`,
-`beirt_nostream`, `beirt_cur`, `beirt_code`.
+`beirt_nostream`, `beirt_cur`, `beirt_code`, `beirt_feirin`,
+`beirt_feirin_units`.
+
+The last two are `sessionStorage` only, deliberately. Everything else follows
+the user's keep mode.
 
 ## Style
 
